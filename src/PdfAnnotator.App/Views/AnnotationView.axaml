@@ -1,9 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             x:Class="PdfAnnotator.App.Views.AnnotationView">
-    <UserControl.DataContext>
-        <Binding Path="Annotation" RelativeSource="{RelativeSource AncestorType=Window}"/>
-    </UserControl.DataContext>
+             x:Class="PdfAnnotator.App.Views.AnnotationView"
+             DataContext="{Binding Annotation}">
     <Grid ColumnDefinitions="320,*" RowDefinitions="Auto,*">
         <StackPanel Margin="12" Spacing="8">
             <TextBlock Text="Режим: аннотирование" FontWeight="Bold"/>
@@ -19,7 +17,13 @@
 
             <StackPanel Orientation="Horizontal" Spacing="8">
                 <TextBlock Text="Пресет"/>
-                <ComboBox Width="160" Items="{Binding Presets}" SelectedItem="{Binding SelectedPreset}" DisplayMemberPath="Name"/>
+                <ComboBox Width="160" ItemsSource="{Binding Presets}" SelectedItem="{Binding SelectedPreset}">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Name}"/>
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
                 <Button Content="Обновить" Command="{Binding ReloadPresetsCommand}"/>
             </StackPanel>
             <StackPanel Orientation="Horizontal" Spacing="8">
@@ -43,7 +47,7 @@
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" Spacing="8">
                     <TextBlock Text="Font"/>
-                    <ComboBox Width="160" Items="{Binding Fonts}" SelectedItem="{Binding FontName}"/>
+                    <ComboBox Width="160" ItemsSource="{Binding Fonts}" SelectedItem="{Binding FontName}"/>
                 </StackPanel>
             </StackPanel>
         </StackPanel>

@@ -8,7 +8,7 @@ namespace PdfAnnotator.Core.Services;
 public class CsvService : ICsvService
 {
     private const string Header = "page;field_text;code";
-    private static readonly Regex SeparatorRegex = new(@";(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", RegexOptions.Compiled);
+    private static readonly Regex SeparatorRegex = new(@";(?=(?:[^\""]*\""[^\""]*\"")*[^\""]*$)", RegexOptions.Compiled);
 
     public Task SaveCsvAsync(string path, List<TableRow> rows)
     {

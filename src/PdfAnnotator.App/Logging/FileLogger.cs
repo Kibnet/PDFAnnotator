@@ -16,7 +16,7 @@ public class FileLogger : ILogger
         Locks.TryAdd(filePath, new object());
     }
 
-    public IDisposable? BeginScope<TState>(TState state) => null;
+    public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
 
     public bool IsEnabled(LogLevel logLevel) => logLevel != LogLevel.None;
 

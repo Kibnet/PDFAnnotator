@@ -97,12 +97,12 @@ public class MainWindowViewModel : ViewModelBase
 
     private void SyncTableToAnnotation()
     {
-        Annotation.SetRows(Table.Rows.ToList());
+        Annotation.SetRows(Table.Rows.Select(r => r.ToModel()).ToList());
     }
 
     public async Task SaveProjectAsync()
     {
-        _currentProject.Rows = Table.Rows.ToList();
+        _currentProject.Rows = Table.Rows.Select(r => r.ToModel()).ToList();
         _currentProject.ExtractPresetName = Extraction.SelectedPreset?.Name ?? string.Empty;
         _currentProject.AnnotatePresetName = Annotation.SelectedPreset?.Name ?? string.Empty;
         var path = Path.Combine("projects", $"{_currentProject.Name}.json");

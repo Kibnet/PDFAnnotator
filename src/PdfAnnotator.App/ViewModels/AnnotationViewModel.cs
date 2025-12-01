@@ -131,7 +131,7 @@ public class AnnotationViewModel : ViewModelBase
         RefreshPreview();
     }
 
-    private async Task LoadPdfAsync()
+    public async Task LoadPdfAsync()
     {
         if (string.IsNullOrWhiteSpace(PdfPath) || !File.Exists(PdfPath))
         {

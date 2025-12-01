@@ -116,7 +116,7 @@ public class ExtractionViewModel : ViewModelBase
         ReloadPresetsCommand = new RelayCommand(async _ => await LoadPresetsAsync());
     }
 
-    private async Task LoadPdfAsync()
+    public async Task LoadPdfAsync()
     {
         if (string.IsNullOrWhiteSpace(PdfPath) || !File.Exists(PdfPath))
         {

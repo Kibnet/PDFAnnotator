@@ -1,0 +1,20 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:views="clr-namespace:PdfAnnotator.App.Views"
+        mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="800"
+        x:Class="PdfAnnotator.App.MainWindow"
+        Title="PDF Extract → Table → Annotate">
+    <TabControl SelectedIndex="{Binding Mode}">
+        <TabItem Header="Извлечение">
+            <views:ExtractionView/>
+        </TabItem>
+        <TabItem Header="Таблица">
+            <views:TableView/>
+        </TabItem>
+        <TabItem Header="Аннотирование">
+            <views:AnnotationView/>
+        </TabItem>
+    </TabControl>
+</Window>

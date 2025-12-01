@@ -1,0 +1,10 @@
+{
+  "name": "Sample Project",
+  "pdfPath": "samples/sample.pdf",
+  "extractPresetName": "ExampleExtract",
+  "annotatePresetName": "ExampleAnnot",
+  "table": [
+    { "page": 1, "field_text": "Sample text page 1", "code": "" },
+    { "page": 2, "field_text": "Sample text page 2", "code": "ABC123" }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "name": "ExampleAnnot",
+  "textX": 120,
+  "textY": 150,
+  "fontSize": 12,
+  "angle": 0,
+  "color": "#000000",
+  "fontName": "Helvetica"
+}

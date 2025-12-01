@@ -1,0 +1,60 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="PdfAnnotator.App.Views.ExtractionView">
+    <UserControl.DataContext>
+        <Binding Path="Extraction" RelativeSource="{RelativeSource AncestorType=Window}"/>
+    </UserControl.DataContext>
+    <Grid ColumnDefinitions="320,*" RowDefinitions="Auto,*">
+        <StackPanel Margin="12" Spacing="8">
+            <TextBlock Text="Режим: извлечение" FontWeight="Bold"/>
+            <TextBox Width="280" Watermark="Путь к PDF" Text="{Binding PdfPath, UpdateSourceTrigger=PropertyChanged}"/>
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <Button Content="Открыть PDF" Command="{Binding LoadPdfCommand}"/>
+                <TextBlock Text="{Binding PageCount, StringFormat='Страниц: {0}'}"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <TextBlock Text="Страница"/>
+                <NumericUpDown Width="80" Minimum="1" Maximum="{Binding PageCount}" Value="{Binding CurrentPage}"/>
+                <TextBlock Text="DPI"/>
+                <NumericUpDown Width="80" Minimum="50" Maximum="600" Increment="10" Value="{Binding Dpi}"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <TextBlock Text="Пресет"/>
+                <ComboBox Width="160" Items="{Binding Presets}" SelectedItem="{Binding SelectedPreset}" DisplayMemberPath="Name"/>
+                <Button Content="Обновить" Command="{Binding ReloadPresetsCommand}"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <Button Content="Сохранить пресет" Command="{Binding SavePresetCommand}"/>
+                <Button Content="Извлечь текст" Command="{Binding ExtractTextCommand}"/>
+            </StackPanel>
+            <StackPanel>
+                <TextBlock Text="Прямоугольник (PDF координаты):"/>
+                <TextBlock Text="{Binding X0, StringFormat='X0: {0:F1}'}"/>
+                <TextBlock Text="{Binding Y0, StringFormat='Y0: {0:F1}'}"/>
+                <TextBlock Text="{Binding X1, StringFormat='X1: {0:F1}'}"/>
+                <TextBlock Text="{Binding Y1, StringFormat='Y1: {0:F1}'}"/>
+            </StackPanel>
+        </StackPanel>
+
+        <ScrollViewer Grid.Column="1" Margin="12" Background="Gray">
+            <Grid>
+                <Image x:Name="PageImage"
+                       Source="{Binding PageBitmap}"
+                       Stretch="Uniform"
+                       PointerPressed="OnPointerPressed"
+                       PointerReleased="OnPointerReleased"
+                       PointerMoved="OnPointerMoved"/>
+                <Canvas IsHitTestVisible="False"
+                        Width="{Binding #PageImage.Bounds.Width}"
+                        Height="{Binding #PageImage.Bounds.Height}">
+                    <Rectangle Stroke="Orange" StrokeThickness="2"
+                               Canvas.Left="{Binding SelectLeft}"
+                               Canvas.Top="{Binding SelectTop}"
+                               Width="{Binding SelectWidth}"
+                               Height="{Binding SelectHeight}"
+                               Fill="#40FFA500"/>
+                </Canvas>
+            </Grid>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

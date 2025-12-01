@@ -1,0 +1,10 @@
+namespace PdfAnnotator.Core.Models;
+
+public class ExtractionPreset
+{
+    public string Name { get; set; } = string.Empty;
+    public double X0 { get; set; }
+    public double Y0 { get; set; }
+    public double X1 { get; set; }
+    public double Y1 { get; set; }
+}

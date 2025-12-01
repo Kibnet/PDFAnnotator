@@ -1,0 +1,24 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="PdfAnnotator.App.Views.TableView">
+    <UserControl.DataContext>
+        <Binding Path="Table" RelativeSource="{RelativeSource AncestorType=Window}"/>
+    </UserControl.DataContext>
+    <DockPanel Margin="12">
+        <StackPanel Orientation="Horizontal" DockPanel.Dock="Top" Spacing="8">
+            <Button Content="Сохранить CSV" Command="{Binding SaveCsvCommand}"/>
+            <Button Content="Загрузить CSV" Command="{Binding LoadCsvCommand}"/>
+        </StackPanel>
+        <DataGrid Items="{Binding Rows}"
+                  AutoGenerateColumns="False"
+                  GridLinesVisibility="All"
+                  CanUserAddRows="False"
+                  CanUserDeleteRows="False">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Page" Binding="{Binding Page}" IsReadOnly="True"/>
+                <DataGridTextColumn Header="ExtractedText" Binding="{Binding FieldText}" IsReadOnly="True" Width="2*"/>
+                <DataGridTextColumn Header="Code" Binding="{Binding Code, Mode=TwoWay}" Width="*" />
+            </DataGrid.Columns>
+        </DataGrid>
+    </DockPanel>
+</UserControl>

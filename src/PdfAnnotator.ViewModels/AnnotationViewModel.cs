@@ -7,28 +7,19 @@ using Avalonia.Media.Imaging;
 using Microsoft.Extensions.Logging;
 using PdfAnnotator.Core.Models;
 using PdfAnnotator.Core.Services;
+using PropertyChanged;
 
 namespace PdfAnnotator.App.ViewModels;
 
-public class AnnotationViewModel : ViewModelBase
+[AddINotifyPropertyChangedInterface]
+public class AnnotationViewModel
 {
     private readonly IPdfService _pdfService;
     private readonly IPresetService _presetService;
     private readonly ILogger<AnnotationViewModel> _logger;
 
-    private string _pdfPath = string.Empty;
-    public string PdfPath
-    {
-        get => _pdfPath;
-        set { _pdfPath = value; RaisePropertyChanged(); }
-    }
-
-    private int _pageCount;
-    public int PageCount
-    {
-        get => _pageCount;
-        set { _pageCount = value; RaisePropertyChanged(); }
-    }
+    public string PdfPath { get; set; } = string.Empty;
+    public int PageCount { get; set; }
 
     private int _currentPage = 1;
     public int CurrentPage
@@ -37,18 +28,12 @@ public class AnnotationViewModel : ViewModelBase
         set
         {
             _currentPage = value;
-            RaisePropertyChanged();
             _ = LoadPageAsync();
             RefreshPreview();
         }
     }
 
-    private Bitmap? _pageBitmap;
-    public Bitmap? PageBitmap
-    {
-        get => _pageBitmap;
-        set { _pageBitmap = value; RaisePropertyChanged(); }
-    }
+    public Bitmap? PageBitmap { get; set; }
 
     public ObservableCollection<AnnotationPreset> Presets { get; } = new();
 
@@ -56,44 +41,23 @@ public class AnnotationViewModel : ViewModelBase
     public AnnotationPreset? SelectedPreset
     {
         get => _selectedPreset;
-        set { _selectedPreset = value; RaisePropertyChanged(); ApplyPreset(); }
+        set { _selectedPreset = value; ApplyPreset(); }
     }
 
     public string? SelectedPresetName { get; set; }
-
-    private double _textX;
-    public double TextX { get => _textX; set { _textX = value; RaisePropertyChanged(); } }
-
-    private double _textY;
-    public double TextY { get => _textY; set { _textY = value; RaisePropertyChanged(); } }
-
-    private double _previewX;
-    public double PreviewX { get => _previewX; set { _previewX = value; RaisePropertyChanged(); } }
-
-    private double _previewY;
-    public double PreviewY { get => _previewY; set { _previewY = value; RaisePropertyChanged(); } }
-
-    private double _fontSize = 12;
-    public double FontSize { get => _fontSize; set { _fontSize = value; RaisePropertyChanged(); } }
-
-    private double _angle;
-    public double Angle { get => _angle; set { _angle = value; RaisePropertyChanged(); } }
-
-    private string _colorHex = "#000000";
-    public string ColorHex { get => _colorHex; set { _colorHex = value; RaisePropertyChanged(); } }
-
-    private string _fontName = "Helvetica";
-    public string FontName { get => _fontName; set { _fontName = value; RaisePropertyChanged(); } }
+    public double TextX { get; set; }
+    public double TextY { get; set; }
+    public double PreviewX { get; set; }
+    public double PreviewY { get; set; }
+    public double FontSize { get; set; } = 12;
+    public double Angle { get; set; }
+    public string ColorHex { get; set; } = "#000000";
+    public string FontName { get; set; } = "Helvetica";
 
     public ObservableCollection<string> Fonts { get; } = new(new[] { "Helvetica", "Arial", "Times New Roman" });
 
     public ObservableCollection<TableRow> Rows { get; } = new();
-    private string _selectedCodePreview = string.Empty;
-    public string SelectedCodePreview
-    {
-        get => _selectedCodePreview;
-        set { _selectedCodePreview = value; RaisePropertyChanged(); }
-    }
+    public string SelectedCodePreview { get; set; } = string.Empty;
 
     public ICommand LoadPdfCommand { get; }
     public ICommand SavePresetCommand { get; }

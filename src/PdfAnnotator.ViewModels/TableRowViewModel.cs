@@ -1,26 +1,16 @@
 using PdfAnnotator.Core.Models;
+using PropertyChanged;
 
 namespace PdfAnnotator.App.ViewModels;
 
-public class TableRowViewModel : ViewModelBase
+[AddINotifyPropertyChangedInterface]
+public class TableRowViewModel
 {
-    private int _page;
-    private string _fieldText = string.Empty;
     private string _code = string.Empty;
-    private bool _pageError;
-    private bool _codeWarning;
 
-    public int Page
-    {
-        get => _page;
-        set { _page = value; RaisePropertyChanged(); }
-    }
+    public int Page { get; set; }
 
-    public string FieldText
-    {
-        get => _fieldText;
-        set { _fieldText = value; RaisePropertyChanged(); }
-    }
+    public string FieldText { get; set; } = string.Empty;
 
     public string Code
     {
@@ -29,21 +19,12 @@ public class TableRowViewModel : ViewModelBase
         {
             _code = value;
             CodeWarning = string.IsNullOrWhiteSpace(_code);
-            RaisePropertyChanged();
         }
     }
 
-    public bool PageError
-    {
-        get => _pageError;
-        set { _pageError = value; RaisePropertyChanged(); }
-    }
+    public bool PageError { get; set; }
 
-    public bool CodeWarning
-    {
-        get => _codeWarning;
-        set { _codeWarning = value; RaisePropertyChanged(); }
-    }
+    public bool CodeWarning { get; set; }
 
     public static TableRowViewModel FromModel(TableRow row)
     {

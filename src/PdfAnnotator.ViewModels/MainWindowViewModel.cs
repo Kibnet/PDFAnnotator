@@ -5,6 +5,7 @@ using System.IO;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using Microsoft.Extensions.Logging;
+using PropertyChanged;
 using PdfAnnotator.Core.Models;
 using PdfAnnotator.Core.Services;
 
@@ -17,7 +18,8 @@ public enum AppMode
     Annotation
 }
 
-public class MainWindowViewModel : ViewModelBase
+[AddINotifyPropertyChangedInterface]
+public class MainWindowViewModel
 {
     private readonly ICsvService _csvService;
     private readonly IPresetService _presetService;
@@ -28,19 +30,7 @@ public class MainWindowViewModel : ViewModelBase
     public TableViewModel Table { get; }
     public AnnotationViewModel Annotation { get; }
 
-    private AppMode _mode = AppMode.Extraction;
-    public AppMode Mode
-    {
-        get => _mode;
-        set
-        {
-            if (_mode != value)
-            {
-                _mode = value;
-                RaisePropertyChanged();
-            }
-        }
-    }
+    public AppMode Mode { get; set; } = AppMode.Extraction;
 
     public ICommand GoToTableCommand { get; }
     public ICommand GoToAnnotationCommand { get; }

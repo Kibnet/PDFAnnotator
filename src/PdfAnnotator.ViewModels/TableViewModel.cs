@@ -6,12 +6,15 @@ using System.IO;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using Microsoft.Extensions.Logging;
+using PropertyChanged;
 using PdfAnnotator.Core.Models;
 using PdfAnnotator.Core.Services;
+using System.ComponentModel;
 
 namespace PdfAnnotator.App.ViewModels;
 
-public class TableViewModel : ViewModelBase
+[AddINotifyPropertyChangedInterface]
+public class TableViewModel
 {
     private readonly ICsvService _csvService;
     private readonly ILogger<TableViewModel> _logger;
@@ -36,8 +39,11 @@ public class TableViewModel : ViewModelBase
         foreach (var row in rows)
         {
             var vm = TableRowViewModel.FromModel(row);
-            vm.PropertyChanged += (_, _) => NotifyRowsUpdated();
-            Rows.Add(vm);
+            if (vm is INotifyPropertyChanged intf)
+            {
+                intf.PropertyChanged += (_, _) => NotifyRowsUpdated();
+                Rows.Add(vm);
+            }
         }
         RowsUpdated?.Invoke(this, Rows.Select(r => r.ToModel()).ToList());
     }

@@ -17,7 +17,6 @@
     <PackageReference Include="Avalonia.Controls.DataGrid" Version="11.*" />
     <PackageReference Include="Docnet.Core" Version="2.*" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.*" />
-    <PackageReference Include="Microsoft.Extensions.Logging" Version="8.*" />
     <PackageReference Include="PdfSharpCore" Version="1.*" />
     <PackageReference Include="UglyToad.PdfPig" Version="1.7.0-custom-5" />
     <!--Condition below is needed to remove Avalonia.Diagnostics package from build output in Release configuration.-->
@@ -28,6 +27,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\PdfAnnotator.ViewModels\PdfAnnotator.ViewModels.csproj" />
     <ProjectReference Include="..\\PdfAnnotator.Core\\PdfAnnotator.Core.csproj" />
   </ItemGroup>
 </Project>

@@ -1,8 +1,10 @@
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Markup.Xaml;
 using Avalonia.Platform.Storage;
 using Avalonia.VisualTree;
+using Avalonia.Media.Imaging;
 using PdfAnnotator.App.ViewModels;
 using System.Linq;
 
@@ -29,8 +31,9 @@ public partial class AnnotationView : UserControl
             return;
         }
 
-        var pos = e.GetPosition(AnnotImage);
-        Vm.UpdatePosition(pos.X, pos.Y, AnnotImage.Bounds.Height);
+        var pos = ToImageSpace(e.GetPosition(AnnotImage));
+        var imageHeight = GetImagePixelSize().Height;
+        Vm.UpdatePosition(pos.X, pos.Y, imageHeight);
     }
 
     private async void OnOpenPdfClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
@@ -64,5 +67,31 @@ public partial class AnnotationView : UserControl
 
         Vm.PdfPath = path;
         await Vm.LoadPdfAsync();
+    }
+
+    private Point ToImageSpace(Point viewPoint)
+    {
+        var size = GetImagePixelSize();
+        var bounds = AnnotImage.Bounds;
+        if (bounds.Width <= 0 || bounds.Height <= 0 || size.Width <= 0 || size.Height <= 0)
+        {
+            return viewPoint;
+        }
+
+        var scaleX = size.Width / bounds.Width;
+        var scaleY = size.Height / bounds.Height;
+        return new Point(viewPoint.X * scaleX, viewPoint.Y * scaleY);
+    }
+
+    private PixelSize GetImagePixelSize()
+    {
+        if (AnnotImage?.Source is Bitmap bmp)
+        {
+            return bmp.PixelSize;
+        }
+
+        var width = AnnotImage?.Bounds.Width ?? 0;
+        var height = AnnotImage?.Bounds.Height ?? 0;
+        return new PixelSize((int)width, (int)height);
     }
 }

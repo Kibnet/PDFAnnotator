@@ -4,6 +4,7 @@ using Avalonia.Input;
 using Avalonia.Markup.Xaml;
 using Avalonia.Platform.Storage;
 using Avalonia.VisualTree;
+using Avalonia.Media.Imaging;
 using PdfAnnotator.App.ViewModels;
 using System.Linq;
 
@@ -34,7 +35,7 @@ public partial class ExtractionView : UserControl
         }
 
         _dragging = true;
-        _start = e.GetPosition(PageImage);
+        _start = ToImageSpace(e.GetPosition(PageImage));
     }
 
     private void OnPointerMoved(object? sender, PointerEventArgs e)
@@ -44,7 +45,7 @@ public partial class ExtractionView : UserControl
             return;
         }
 
-        var pos = e.GetPosition(PageImage);
+        var pos = ToImageSpace(e.GetPosition(PageImage));
         UpdateSelection(pos);
     }
 
@@ -55,15 +56,42 @@ public partial class ExtractionView : UserControl
             return;
         }
 
-        var pos = e.GetPosition(PageImage);
+        var pos = ToImageSpace(e.GetPosition(PageImage));
         UpdateSelection(pos);
         _dragging = false;
     }
 
     private void UpdateSelection(Point pos)
     {
-        var imageHeight = PageImage.Bounds.Height;
+        var imageSize = GetImagePixelSize();
+        var imageHeight = imageSize.Height;
         Vm!.UpdateSelection(_start.X, _start.Y, pos.X, pos.Y, imageHeight);
+    }
+
+    private Point ToImageSpace(Point viewPoint)
+    {
+        var size = GetImagePixelSize();
+        var bounds = PageImage.Bounds;
+        if (bounds.Width <= 0 || bounds.Height <= 0 || size.Width <= 0 || size.Height <= 0)
+        {
+            return viewPoint;
+        }
+
+        var scaleX = size.Width / bounds.Width;
+        var scaleY = size.Height / bounds.Height;
+        return new Point(viewPoint.X * scaleX, viewPoint.Y * scaleY);
+    }
+
+    private PixelSize GetImagePixelSize()
+    {
+        if (PageImage?.Source is Bitmap bmp)
+        {
+            return bmp.PixelSize;
+        }
+
+        var width = PageImage?.Bounds.Width ?? 0;
+        var height = PageImage?.Bounds.Height ?? 0;
+        return new PixelSize((int)width, (int)height);
     }
 
     private async void OnOpenPdfClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)

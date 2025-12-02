@@ -52,13 +52,19 @@
             </StackPanel>
         </StackPanel>
 
-        <ScrollViewer Grid.Column="1" Margin="12" Background="Gray">
+        <ScrollViewer Grid.Column="1" Margin="12" Background="Gray"
+                      HorizontalScrollBarVisibility="Disabled"
+                      VerticalScrollBarVisibility="Disabled">
             <Grid>
                 <Image x:Name="AnnotImage"
                        Source="{Binding PageBitmap}"
                        Stretch="Uniform"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
                        PointerPressed="OnPointerPressed"/>
-                <Canvas IsHitTestVisible="False">
+                <Canvas IsHitTestVisible="False"
+                        Width="{Binding #AnnotImage.Bounds.Width}"
+                        Height="{Binding #AnnotImage.Bounds.Height}">
                     <TextBlock Text="{Binding SelectedCodePreview}"
                                Canvas.Left="{Binding PreviewX}"
                                Canvas.Top="{Binding PreviewY}"

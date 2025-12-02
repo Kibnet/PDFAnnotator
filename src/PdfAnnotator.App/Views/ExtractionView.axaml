@@ -2,9 +2,10 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="PdfAnnotator.App.Views.ExtractionView"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:viewmodels="using:PdfAnnotator.App.ViewModels"
              d:DesignHeight="1000"
              d:DesignWidth="1200"
-             DataContext="{Binding Extraction}">
+             x:DataType="viewmodels:ExtractionViewModel">
     <Grid ColumnDefinitions="500,*" RowDefinitions="Auto,*">
         <StackPanel Margin="12" Spacing="8">
             <TextBlock Text="Режим: извлечение" FontWeight="Bold"/>
@@ -43,27 +44,27 @@
             </StackPanel>
         </StackPanel>
 
-        <Grid Grid.Column="1" Margin="12" Background="Gray">
-            <Grid>
-                <Image x:Name="PageImage"
-                       Source="{Binding PageBitmap}"
-                       Stretch="Uniform"
-                       HorizontalAlignment="Center"
-                       VerticalAlignment="Center"
-                       PointerPressed="OnPointerPressed"
-                       PointerReleased="OnPointerReleased"
-                       PointerMoved="OnPointerMoved"/>
-                <Canvas IsHitTestVisible="False"
-                        Width="{Binding #PageImage.Bounds.Width}"
-                        Height="{Binding #PageImage.Bounds.Height}">
-                    <Rectangle Stroke="Orange" StrokeThickness="2"
-                               Canvas.Left="{Binding SelectLeft}"
-                               Canvas.Top="{Binding SelectTop}"
-                               Width="{Binding SelectWidth}"
-                               Height="{Binding SelectHeight}"
-                               Fill="#40FFA500"/>
-                </Canvas>
-            </Grid>
-        </Grid>
+        <Border Grid.Column="1" Margin="12" Background="Gray">
+            <Viewbox Stretch="Uniform">
+                <Grid Width="{Binding PageBitmap.PixelSize.Width}" Height="{Binding PageBitmap.PixelSize.Height}">
+                    <Image x:Name="PageImage"
+                           Source="{Binding PageBitmap}"
+                           Stretch="Fill"
+                           PointerPressed="OnPointerPressed"
+                           PointerReleased="OnPointerReleased"
+                           PointerMoved="OnPointerMoved"/>
+                    <Canvas IsHitTestVisible="False"
+                            Width="{Binding #PageImage.Bounds.Width}"
+                            Height="{Binding #PageImage.Bounds.Height}">
+                        <Rectangle Stroke="Orange" StrokeThickness="2"
+                                   Canvas.Left="{Binding SelectLeft}"
+                                   Canvas.Top="{Binding SelectTop}"
+                                   Width="{Binding SelectWidth}"
+                                   Height="{Binding SelectHeight}"
+                                   Fill="#40FFA500"/>
+                    </Canvas>
+                </Grid>
+            </Viewbox>
+        </Border>
     </Grid>
 </UserControl>

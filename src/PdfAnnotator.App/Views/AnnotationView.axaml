@@ -1,7 +1,8 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:viewmodels="using:PdfAnnotator.App.ViewModels"
              x:Class="PdfAnnotator.App.Views.AnnotationView"
-             DataContext="{Binding Annotation}">
+             x:DataType="viewmodels:AnnotationViewModel"             >
     <Grid ColumnDefinitions="320,*" RowDefinitions="Auto,*">
         <StackPanel Margin="12" Spacing="8">
             <TextBlock Text="Режим: аннотирование" FontWeight="Bold"/>
@@ -52,30 +53,28 @@
             </StackPanel>
         </StackPanel>
 
-        <ScrollViewer Grid.Column="1" Margin="12" Background="Gray"
-                      HorizontalScrollBarVisibility="Disabled"
-                      VerticalScrollBarVisibility="Disabled">
-            <Grid>
-                <Image x:Name="AnnotImage"
-                       Source="{Binding PageBitmap}"
-                       Stretch="Uniform"
-                       HorizontalAlignment="Center"
-                       VerticalAlignment="Center"
-                       PointerPressed="OnPointerPressed"/>
-                <Canvas IsHitTestVisible="False"
-                        Width="{Binding #AnnotImage.Bounds.Width}"
-                        Height="{Binding #AnnotImage.Bounds.Height}">
-                    <TextBlock Text="{Binding SelectedCodePreview}"
-                               Canvas.Left="{Binding PreviewX}"
-                               Canvas.Top="{Binding PreviewY}"
-                               FontSize="{Binding FontSize}"
-                               RenderTransformOrigin="0,0">
-                        <TextBlock.RenderTransform>
-                            <RotateTransform Angle="{Binding Angle}"/>
-                        </TextBlock.RenderTransform>
-                    </TextBlock>
-                </Canvas>
-            </Grid>
-        </ScrollViewer>
+        <Border Grid.Column="1" Margin="12" Background="Gray">
+            <Viewbox Stretch="Uniform">
+                <Grid Width="{Binding PageBitmap.PixelSize.Width}" Height="{Binding PageBitmap.PixelSize.Height}">
+                    <Image x:Name="AnnotImage"
+                           Source="{Binding PageBitmap}"
+                           Stretch="Fill"
+                           PointerPressed="OnPointerPressed"/>
+                    <Canvas IsHitTestVisible="False"
+                            Width="{Binding #AnnotImage.Bounds.Width}"
+                            Height="{Binding #AnnotImage.Bounds.Height}">
+                        <TextBlock Text="{Binding SelectedCodePreview}"
+                                   Canvas.Left="{Binding PreviewX}"
+                                   Canvas.Top="{Binding PreviewY}"
+                                   FontSize="{Binding FontSize}"
+                                   RenderTransformOrigin="0,0">
+                            <TextBlock.RenderTransform>
+                                <RotateTransform Angle="{Binding Angle}"/>
+                            </TextBlock.RenderTransform>
+                        </TextBlock>
+                    </Canvas>
+                </Grid>
+            </Viewbox>
+        </Border>
     </Grid>
 </UserControl>

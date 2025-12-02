@@ -42,6 +42,7 @@ public class ExtractionViewModel
     }
 
     public int Dpi { get; set; } = 50;
+    public int PageRotation { get; set; } = 0;  // Rotation angle: 0, 90, 180, or 270
     public Bitmap? PageBitmap { get; set; }
 
     public double X0 { get; set; }
@@ -90,6 +91,8 @@ public class ExtractionViewModel
     public ICommand SavePresetCommand { get; }
     public ICommand LoadPresetCommand { get; }
     public ICommand ReloadPresetsCommand { get; }
+    public ICommand RotateLeftCommand { get; }
+    public ICommand RotateRightCommand { get; }
 
     public ExtractionViewModel(IPdfService pdfService, IPresetService presetService, ILogger<ExtractionViewModel> logger)
     {
@@ -102,6 +105,8 @@ public class ExtractionViewModel
         SavePresetCommand = new RelayCommand(async _ => await SavePresetAsync());
         LoadPresetCommand = new RelayCommand(async _ => await ApplyPreset());
         ReloadPresetsCommand = new RelayCommand(async _ => await LoadPresetsAsync());
+        RotateLeftCommand = new RelayCommand(_ => RotateLeft());
+        RotateRightCommand = new RelayCommand(_ => RotateRight());
     }
 
     public async Task LoadPdfAsync()
@@ -124,7 +129,7 @@ public class ExtractionViewModel
             return;
         }
 
-        PageBitmap = await _pdfService.RenderPageAsync(PdfPath, CurrentPage, Dpi);
+        PageBitmap = await _pdfService.RenderPageAsync(PdfPath, CurrentPage, Dpi, PageRotation);
         
         // If a preset is already selected, notify that we need to update the selection rectangle
         // This ensures the rectangle is displayed when switching pages or loading a new PDF
@@ -174,7 +179,7 @@ public class ExtractionViewModel
                 Y1 = Y1
             };
 
-            var rows = await _pdfService.ExtractTextAsync(PdfPath, preset);
+            var rows = await _pdfService.ExtractTextAsync(PdfPath, preset, PageRotation);
             
             // Combine all extracted text for the current page into a single preview
             var previewText = string.Join("\n", rows.Where(r => r.Page == CurrentPage).Select(r => r.FieldText));
@@ -198,7 +203,7 @@ public class ExtractionViewModel
             Y1 = Y1
         };
 
-        var rows = await _pdfService.ExtractTextAsync(PdfPath, preset);
+        var rows = await _pdfService.ExtractTextAsync(PdfPath, preset, PageRotation);
         TableUpdated?.Invoke(this, rows);
     }
 
@@ -268,5 +273,17 @@ public class ExtractionViewModel
 
         Presets.Add(preset);
         SelectedPreset = preset;
+    }
+    
+    private void RotateLeft()
+    {
+        PageRotation = (PageRotation - 90 + 360) % 360;
+        _ = LoadPageAsync();
+    }
+    
+    private void RotateRight()
+    {
+        PageRotation = (PageRotation + 90) % 360;
+        _ = LoadPageAsync();
     }
 }

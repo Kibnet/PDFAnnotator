@@ -21,6 +21,12 @@
                 <NumericUpDown Width="180" Minimum="50" Maximum="600" Increment="10" Value="{Binding Dpi}"/>
             </StackPanel>
             <StackPanel Orientation="Horizontal" Spacing="8">
+                <TextBlock Text="Поворот"/>
+                <Button Content="↶ Влево" Command="{Binding RotateLeftCommand}" Width="90"/>
+                <Button Content="↷ Вправо" Command="{Binding RotateRightCommand}" Width="90"/>
+                <TextBlock Text="{Binding PageRotation, StringFormat='{}{0}°'}" VerticalAlignment="Center"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="8">
                 <TextBlock Text="Пресет"/>
                 <ComboBox Width="160" ItemsSource="{Binding Presets}" SelectedItem="{Binding SelectedPreset}">
                     <ComboBox.ItemTemplate>

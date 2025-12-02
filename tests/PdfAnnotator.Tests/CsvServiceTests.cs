@@ -1,5 +1,13 @@
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 using PdfAnnotator.Core.Models;
 using PdfAnnotator.Core.Services;
+using Xunit;
 
 namespace PdfAnnotator.Tests;
 
@@ -22,5 +30,7 @@ public class CsvServiceTests
         Assert.Equal(rows.Count, loaded.Count);
         Assert.Equal(rows[0].FieldText, loaded[0].FieldText);
         Assert.Equal(rows[1].Code, loaded[1].Code);
+
+        File.Delete(path);
     }
 }

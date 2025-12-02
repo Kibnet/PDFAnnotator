@@ -21,6 +21,7 @@ public class ExtractionViewModel
     private readonly ILogger<ExtractionViewModel> _logger;
 
     public event EventHandler<List<TableRow>>? TableUpdated;
+    public event EventHandler? PresetApplied;
 
     public string PdfPath { get; set; } = string.Empty;
 
@@ -54,18 +55,34 @@ public class ExtractionViewModel
 
     public ObservableCollection<ExtractionPreset> Presets { get; } = new();
 
-    private ExtractionPreset? _selectedPreset;
-    public ExtractionPreset? SelectedPreset
-    {
+    public ExtractionPreset? SelectedPreset 
+    { 
         get => _selectedPreset;
-        set { _selectedPreset = value; ApplyPreset(); }
+        set
+        {
+            _selectedPreset = value;
+            if (_selectedPreset != null)
+            {
+                // Apply the preset values directly
+                X0 = _selectedPreset.X0;
+                Y0 = _selectedPreset.Y0;
+                X1 = _selectedPreset.X1;
+                Y1 = _selectedPreset.Y1;
+                
+                // Notify that the preset has been applied so the view can update the selection rectangle
+                PresetApplied?.Invoke(this, EventArgs.Empty);
+            }
+        }
     }
-
+    
+    private ExtractionPreset? _selectedPreset;
+    
     public string? SelectedPresetName { get; set; }
 
     public ICommand LoadPdfCommand { get; }
     public ICommand ExtractTextCommand { get; }
     public ICommand SavePresetCommand { get; }
+    public ICommand LoadPresetCommand { get; }
     public ICommand ReloadPresetsCommand { get; }
 
     public ExtractionViewModel(IPdfService pdfService, IPresetService presetService, ILogger<ExtractionViewModel> logger)
@@ -75,8 +92,9 @@ public class ExtractionViewModel
         _logger = logger;
 
         LoadPdfCommand = new RelayCommand(async _ => await LoadPdfAsync());
-        ExtractTextCommand = new RelayCommand(async _ => await ExtractAsync(), _ => PageCount > 0);
+        ExtractTextCommand = new RelayCommand(async _ => await ExtractAsync());
         SavePresetCommand = new RelayCommand(async _ => await SavePresetAsync());
+        LoadPresetCommand = new RelayCommand(async _ => await ApplyPreset());
         ReloadPresetsCommand = new RelayCommand(async _ => await LoadPresetsAsync());
     }
 
@@ -101,6 +119,13 @@ public class ExtractionViewModel
         }
 
         PageBitmap = await _pdfService.RenderPageAsync(PdfPath, CurrentPage, Dpi);
+        
+        // If a preset is already selected, notify that we need to update the selection rectangle
+        // This ensures the rectangle is displayed when switching pages or loading a new PDF
+        if (SelectedPreset != null)
+        {
+            PresetApplied?.Invoke(this, EventArgs.Empty);
+        }
     }
 
     public void UpdateSelection(double startX, double startY, double endX, double endY, double imageHeight)
@@ -146,6 +171,25 @@ public class ExtractionViewModel
         SelectedPreset = Presets.FirstOrDefault(p => p.Name == preset.Name);
     }
 
+    public async Task LoadPresetFromFileAsync(string path)
+    {
+        var preset = await _presetService.LoadExtractionPresetAsync(path);
+        if (preset == null)
+        {
+            _logger.LogWarning("Failed to load extraction preset from {Path}", path);
+            return;
+        }
+
+        var existing = Presets.FirstOrDefault(p => p.Name == preset.Name);
+        if (existing != null)
+        {
+            Presets.Remove(existing);
+        }
+
+        Presets.Add(preset);
+        SelectedPreset = preset;
+    }
+
     public async Task LoadPresetsAsync()
     {
         Presets.Clear();
@@ -161,7 +205,7 @@ public class ExtractionViewModel
         }
     }
 
-    private void ApplyPreset()
+    private async Task ApplyPreset()
     {
         if (SelectedPreset == null)
         {
@@ -172,5 +216,8 @@ public class ExtractionViewModel
         Y0 = SelectedPreset.Y0;
         X1 = SelectedPreset.X1;
         Y1 = SelectedPreset.Y1;
+        
+        // Notify that the preset has been applied so the view can update the selection rectangle
+        PresetApplied?.Invoke(this, EventArgs.Empty);
     }
 }

@@ -33,6 +33,25 @@ public class PresetService : IPresetService
         return Task.FromResult(list);
     }
 
+    public Task<ExtractionPreset?> LoadExtractionPresetAsync(string path)
+    {
+        if (!File.Exists(path))
+        {
+            return Task.FromResult<ExtractionPreset?>(null);
+        }
+
+        try
+        {
+            var content = File.ReadAllText(path);
+            var preset = JsonSerializer.Deserialize<ExtractionPreset>(content);
+            return Task.FromResult(preset);
+        }
+        catch
+        {
+            return Task.FromResult<ExtractionPreset?>(null);
+        }
+    }
+
     public Task<List<AnnotationPreset>> LoadAllAnnotationPresetsAsync()
     {
         var list = LoadPresets<AnnotationPreset>(AnnotateDir);

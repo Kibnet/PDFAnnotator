@@ -10,4 +10,5 @@ public interface IPresetService
     Task SaveAnnotationPresetAsync(AnnotationPreset preset);
     Task<List<ExtractionPreset>> LoadAllExtractionPresetsAsync();
     Task<List<AnnotationPreset>> LoadAllAnnotationPresetsAsync();
+    Task<ExtractionPreset?> LoadExtractionPresetAsync(string path);
 }

@@ -6,6 +6,8 @@ using Avalonia.Platform.Storage;
 using Avalonia.VisualTree;
 using Avalonia.Media.Imaging;
 using PdfAnnotator.App.ViewModels;
+using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace PdfAnnotator.App.Views;
@@ -26,7 +28,55 @@ public partial class ExtractionView : UserControl
         PageImage = this.Get<Image>("PageImage");
     }
 
+    protected override void OnDataContextChanged(EventArgs e)
+    {
+        if (Vm != null)
+        {
+            Vm.PresetApplied -= OnPresetApplied;
+        }
+        
+        base.OnDataContextChanged(e);
+        
+        if (Vm != null)
+        {
+            Vm.PresetApplied += OnPresetApplied;
+        }
+    }
+
     private ExtractionViewModel? Vm => DataContext as ExtractionViewModel;
+
+    private void OnPresetApplied(object? sender, EventArgs e)
+    {
+        // When a preset is applied, update the selection rectangle to show the preset area
+        UpdateSelectionFromPreset();
+    }
+
+    private void UpdateSelectionFromPreset()
+    {
+        if (Vm == null || PageImage?.Source == null)
+        {
+            return;
+        }
+
+        // Convert PDF coordinates to view coordinates for the selection rectangle
+        var imageHeight = PageImage.Source is Bitmap bmp ? bmp.PixelSize.Height : PageImage.Bounds.Height;
+        
+        // Convert from PDF coordinate system (bottom-left origin) to bitmap coordinate system (top-left origin)
+        var x0 = Vm.X0;
+        var x1 = Vm.X1;
+        var y0 = imageHeight - Vm.Y1;  // Note: Y1 in PDF corresponds to the top in bitmap
+        var y1 = imageHeight - Vm.Y0;  // Note: Y0 in PDF corresponds to the bottom in bitmap
+        
+        // Convert bitmap coordinates to view coordinates
+        var startPoint = FromBitmapSpace(new Point(Math.Min(x0, x1), Math.Min(y0, y1)));
+        var endPoint = FromBitmapSpace(new Point(Math.Max(x0, x1), Math.Max(y0, y1)));
+        
+        // Update the selection rectangle properties directly
+        Vm.SelectLeft = startPoint.X;
+        Vm.SelectTop = startPoint.Y;
+        Vm.SelectWidth = endPoint.X - startPoint.X;
+        Vm.SelectHeight = endPoint.Y - startPoint.Y;
+    }
 
     private void OnPointerPressed(object? sender, PointerPressedEventArgs e)
     {
@@ -66,7 +116,7 @@ public partial class ExtractionView : UserControl
     {
         var scaled = ToBitmapSpace(pos);
         var startScaled = ToBitmapSpace(_start);
-        var imageHeight = PageImage.Source is Bitmap bmp ? bmp.PixelSize.Height : PageImage.Bounds.Height;
+        var imageHeight = PageImage!.Source is Bitmap bmp ? bmp.PixelSize.Height : PageImage.Bounds.Height;
         Vm!.UpdateSelection(startScaled.X, startScaled.Y, scaled.X, scaled.Y, imageHeight);
     }
 
@@ -103,6 +153,38 @@ public partial class ExtractionView : UserControl
         await Vm.LoadPdfAsync();
     }
 
+    private async void OnLoadPresetClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (Vm == null)
+        {
+            return;
+        }
+
+        var top = TopLevel.GetTopLevel(this);
+        if (top == null)
+        {
+            return;
+        }
+
+        var files = await top.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            AllowMultiple = false,
+            FileTypeFilter = new List<FilePickerFileType>
+            {
+                new("Preset") { Patterns = new[] { "*.json" } },
+                FilePickerFileTypes.All
+            }
+        });
+
+        var path = files?.FirstOrDefault()?.Path.LocalPath;
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return;
+        }
+
+        await Vm.LoadPresetFromFileAsync(path);
+    }
+
     private Point ToBitmapSpace(Point viewPoint)
     {
         if (PageImage?.Source is not Bitmap bmp)
@@ -119,5 +201,23 @@ public partial class ExtractionView : UserControl
         var scaleX = bmp.PixelSize.Width / bounds.Width;
         var scaleY = bmp.PixelSize.Height / bounds.Height;
         return new Point(viewPoint.X * scaleX, viewPoint.Y * scaleY);
+    }
+    
+    private Point FromBitmapSpace(Point bitmapPoint)
+    {
+        if (PageImage?.Source is not Bitmap bmp)
+        {
+            return bitmapPoint;
+        }
+
+        var bounds = PageImage.Bounds;
+        if (bounds.Width <= 0 || bounds.Height <= 0)
+        {
+            return bitmapPoint;
+        }
+
+        var scaleX = bounds.Width / bmp.PixelSize.Width;
+        var scaleY = bounds.Height / bmp.PixelSize.Height;
+        return new Point(bitmapPoint.X * scaleX, bitmapPoint.Y * scaleY);
     }
 }

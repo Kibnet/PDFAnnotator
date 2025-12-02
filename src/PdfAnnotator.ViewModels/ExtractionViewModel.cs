@@ -52,6 +52,9 @@ public class ExtractionViewModel
     public double SelectTop { get; set; }
     public double SelectWidth { get; set; }
     public double SelectHeight { get; set; }
+    
+    // Property for extracted text preview
+    public string ExtractedTextPreview { get; set; } = string.Empty;
 
     public ObservableCollection<ExtractionPreset> Presets { get; } = new();
 
@@ -71,6 +74,9 @@ public class ExtractionViewModel
                 
                 // Notify that the preset has been applied so the view can update the selection rectangle
                 PresetApplied?.Invoke(this, EventArgs.Empty);
+                
+                // Automatically extract text for preview when a preset is selected
+                _ = ExtractTextPreviewAsync();
             }
         }
     }
@@ -125,6 +131,8 @@ public class ExtractionViewModel
         if (SelectedPreset != null)
         {
             PresetApplied?.Invoke(this, EventArgs.Empty);
+            // Also extract text for preview when page changes
+            _ = ExtractTextPreviewAsync();
         }
     }
 
@@ -139,6 +147,44 @@ public class ExtractionViewModel
         // Convert to PDF coordinate system: bottom-left origin
         Y0 = imageHeight - Math.Max(startY, endY);
         Y1 = imageHeight - Math.Min(startY, endY);
+        
+        // Automatically extract text for preview when selection changes
+        _ = ExtractTextPreviewAsync();
+    }
+
+    // Method to extract text for preview purposes
+    private async Task ExtractTextPreviewAsync()
+    {
+        // Only extract if we have a valid PDF path and selection
+        if (string.IsNullOrWhiteSpace(PdfPath) || !File.Exists(PdfPath) || 
+            (X0 == 0 && Y0 == 0 && X1 == 0 && Y1 == 0))
+        {
+            ExtractedTextPreview = string.Empty;
+            return;
+        }
+
+        try
+        {
+            var preset = new ExtractionPreset
+            {
+                Name = SelectedPreset?.Name ?? "Current",
+                X0 = X0,
+                Y0 = Y0,
+                X1 = X1,
+                Y1 = Y1
+            };
+
+            var rows = await _pdfService.ExtractTextAsync(PdfPath, preset);
+            
+            // Combine all extracted text for the current page into a single preview
+            var previewText = string.Join("\n", rows.Where(r => r.Page == CurrentPage).Select(r => r.FieldText));
+            ExtractedTextPreview = string.IsNullOrEmpty(previewText) ? "Нет текста для извлечения" : previewText;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to extract text for preview");
+            ExtractedTextPreview = $"Ошибка извлечения: {ex.Message}";
+        }
     }
 
     private async Task ExtractAsync()
@@ -171,23 +217,23 @@ public class ExtractionViewModel
         SelectedPreset = Presets.FirstOrDefault(p => p.Name == preset.Name);
     }
 
-    public async Task LoadPresetFromFileAsync(string path)
+    private async Task ApplyPreset()
     {
-        var preset = await _presetService.LoadExtractionPresetAsync(path);
-        if (preset == null)
+        if (SelectedPreset == null)
         {
-            _logger.LogWarning("Failed to load extraction preset from {Path}", path);
             return;
         }
 
-        var existing = Presets.FirstOrDefault(p => p.Name == preset.Name);
-        if (existing != null)
-        {
-            Presets.Remove(existing);
-        }
-
-        Presets.Add(preset);
-        SelectedPreset = preset;
+        X0 = SelectedPreset.X0;
+        Y0 = SelectedPreset.Y0;
+        X1 = SelectedPreset.X1;
+        Y1 = SelectedPreset.Y1;
+        
+        // Notify that the preset has been applied so the view can update the selection rectangle
+        PresetApplied?.Invoke(this, EventArgs.Empty);
+        
+        // Automatically extract text for preview when a preset is applied
+        _ = ExtractTextPreviewAsync();
     }
 
     public async Task LoadPresetsAsync()
@@ -205,19 +251,22 @@ public class ExtractionViewModel
         }
     }
 
-    private async Task ApplyPreset()
+    public async Task LoadPresetFromFileAsync(string path)
     {
-        if (SelectedPreset == null)
+        var preset = await _presetService.LoadExtractionPresetAsync(path);
+        if (preset == null)
         {
+            _logger.LogWarning("Failed to load extraction preset from {Path}", path);
             return;
         }
 
-        X0 = SelectedPreset.X0;
-        Y0 = SelectedPreset.Y0;
-        X1 = SelectedPreset.X1;
-        Y1 = SelectedPreset.Y1;
-        
-        // Notify that the preset has been applied so the view can update the selection rectangle
-        PresetApplied?.Invoke(this, EventArgs.Empty);
+        var existing = Presets.FirstOrDefault(p => p.Name == preset.Name);
+        if (existing != null)
+        {
+            Presets.Remove(existing);
+        }
+
+        Presets.Add(preset);
+        SelectedPreset = preset;
     }
 }

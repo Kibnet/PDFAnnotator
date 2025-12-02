@@ -43,6 +43,16 @@
                 <TextBlock Text="{Binding X1, StringFormat='X1: {0:F1}'}"/>
                 <TextBlock Text="{Binding Y1, StringFormat='Y1: {0:F1}'}"/>
             </StackPanel>
+            <!-- Text Preview Section -->
+            <StackPanel>
+                <TextBlock Text="Предварительный просмотр извлеченного текста:" FontWeight="Bold"/>
+                <TextBox Text="{Binding ExtractedTextPreview}" 
+                         MinHeight="100" 
+                         MaxHeight="200" 
+                         IsReadOnly="True" 
+                         TextWrapping="Wrap" 
+                         ScrollViewer.VerticalScrollBarVisibility="Auto"/>
+            </StackPanel>
         </StackPanel>
 
         <Border Grid.Column="1" Margin="12" Background="Gray">

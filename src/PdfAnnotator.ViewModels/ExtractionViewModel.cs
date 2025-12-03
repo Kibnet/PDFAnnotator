@@ -68,6 +68,8 @@ public class ExtractionViewModel
         set
         {
             _selectedPreset = value;
+            SelectedPresetName = _selectedPreset?.Name;
+            PresetName = _selectedPreset?.Name ?? string.Empty;
             if (_selectedPreset != null)
             {
                 // Apply the preset values directly
@@ -88,12 +90,15 @@ public class ExtractionViewModel
     private ExtractionPreset? _selectedPreset;
     
     public string? SelectedPresetName { get; set; }
+    public string PresetName { get; set; } = string.Empty;
 
     public ICommand LoadPdfCommand { get; }
     public ICommand ExtractTextCommand { get; }
     public ICommand SavePresetCommand { get; }
     public ICommand LoadPresetCommand { get; }
     public ICommand ReloadPresetsCommand { get; }
+    public ICommand DeletePresetCommand { get; }
+    public ICommand RenamePresetCommand { get; }
 
     public ExtractionViewModel(IPdfService pdfService, IPresetService presetService, ILogger<ExtractionViewModel> logger)
     {
@@ -106,6 +111,8 @@ public class ExtractionViewModel
         SavePresetCommand = new RelayCommand(async _ => await SavePresetAsync());
         LoadPresetCommand = new RelayCommand(async _ => await ApplyPreset());
         ReloadPresetsCommand = new RelayCommand(async _ => await LoadPresetsAsync());
+        DeletePresetCommand = new RelayCommand(async _ => await DeletePresetAsync());
+        RenamePresetCommand = new RelayCommand(async _ => await RenamePresetAsync());
     }
 
     public async Task LoadPdfAsync()
@@ -238,9 +245,13 @@ public class ExtractionViewModel
 
     private async Task SavePresetAsync()
     {
+        var chosenName = string.IsNullOrWhiteSpace(PresetName)
+            ? SelectedPreset?.Name
+            : PresetName.Trim();
+        
         var preset = new ExtractionPreset
         {
-            Name = SelectedPreset?.Name ?? $"Preset_{DateTime.Now:HHmmss}",
+            Name = string.IsNullOrWhiteSpace(chosenName) ? $"Preset_{DateTime.Now:HHmmss}" : chosenName,
             X0 = X0,
             Y0 = Y0,
             X1 = X1,
@@ -249,6 +260,44 @@ public class ExtractionViewModel
         await _presetService.SaveExtractionPresetAsync(preset);
         await LoadPresetsAsync();
         SelectedPreset = Presets.FirstOrDefault(p => p.Name == preset.Name);
+    }
+
+    private async Task DeletePresetAsync()
+    {
+        if (SelectedPreset == null)
+        {
+            return;
+        }
+
+        var nameToDelete = SelectedPreset.Name;
+        await _presetService.DeleteExtractionPresetAsync(nameToDelete);
+        var existing = Presets.FirstOrDefault(p => p.Name == nameToDelete);
+        if (existing != null)
+        {
+            Presets.Remove(existing);
+        }
+
+        SelectedPreset = null;
+        PresetName = string.Empty;
+    }
+
+    private async Task RenamePresetAsync()
+    {
+        if (SelectedPreset == null)
+        {
+            return;
+        }
+
+        var newName = PresetName?.Trim();
+        if (string.IsNullOrWhiteSpace(newName) || newName == SelectedPreset.Name)
+        {
+            return;
+        }
+
+        await _presetService.RenameExtractionPresetAsync(SelectedPreset.Name, newName);
+        SelectedPresetName = newName;
+        await LoadPresetsAsync();
+        SelectedPreset = Presets.FirstOrDefault(p => p.Name == newName);
     }
 
     private async Task ApplyPreset()

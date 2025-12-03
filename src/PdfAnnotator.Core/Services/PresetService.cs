@@ -27,6 +27,50 @@ public class PresetService : IPresetService
         return File.WriteAllTextAsync(path, JsonSerializer.Serialize(preset, JsonOptions));
     }
 
+    public Task DeleteExtractionPresetAsync(string presetName)
+    {
+        var path = Path.Combine(ExtractDir, $"{presetName}.json");
+        if (File.Exists(path))
+        {
+            File.Delete(path);
+        }
+
+        return Task.CompletedTask;
+    }
+
+    public async Task RenameExtractionPresetAsync(string oldName, string newName)
+    {
+        Directory.CreateDirectory(ExtractDir);
+        var oldPath = Path.Combine(ExtractDir, $"{oldName}.json");
+        var newPath = Path.Combine(ExtractDir, $"{newName}.json");
+
+        if (!File.Exists(oldPath))
+        {
+            return;
+        }
+
+        // Update the preset content to reflect the new name
+        try
+        {
+            var content = await File.ReadAllTextAsync(oldPath);
+            var preset = JsonSerializer.Deserialize<ExtractionPreset>(content);
+            if (preset != null)
+            {
+                preset.Name = newName;
+                var updatedContent = JsonSerializer.Serialize(preset, JsonOptions);
+                await File.WriteAllTextAsync(newPath, updatedContent);
+                if (!string.Equals(oldPath, newPath, StringComparison.OrdinalIgnoreCase))
+                {
+                    File.Delete(oldPath);
+                }
+            }
+        }
+        catch
+        {
+            // Swallow exceptions to keep behavior consistent with existing service style
+        }
+    }
+
     public Task<List<ExtractionPreset>> LoadAllExtractionPresetsAsync()
     {
         var list = LoadPresets<ExtractionPreset>(ExtractDir);

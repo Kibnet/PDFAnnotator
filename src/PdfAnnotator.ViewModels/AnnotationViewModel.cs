@@ -34,7 +34,6 @@ public class AnnotationViewModel
     }
 
     public Bitmap? PageBitmap { get; set; }
-    public int PageRotation { get; set; } = 0;  // Rotation angle: 0, 90, 180, or 270
 
     public ObservableCollection<AnnotationPreset> Presets { get; } = new();
 
@@ -64,8 +63,6 @@ public class AnnotationViewModel
     public ICommand SavePresetCommand { get; }
     public ICommand ReloadPresetsCommand { get; }
     public ICommand SaveAnnotatedPdfCommand { get; }
-    public ICommand RotateLeftCommand { get; }
-    public ICommand RotateRightCommand { get; }
 
     public AnnotationViewModel(IPdfService pdfService, IPresetService presetService, ILogger<AnnotationViewModel> logger)
     {
@@ -77,8 +74,6 @@ public class AnnotationViewModel
         SavePresetCommand = new RelayCommand(async _ => await SavePresetAsync());
         ReloadPresetsCommand = new RelayCommand(async _ => await LoadPresetsAsync());
         SaveAnnotatedPdfCommand = new RelayCommand(async _ => await SaveAnnotatedAsync());
-        RotateLeftCommand = new RelayCommand(_ => RotateLeft());
-        RotateRightCommand = new RelayCommand(_ => RotateRight());
     }
 
     public void SetRows(IEnumerable<TableRow> rows)
@@ -120,7 +115,7 @@ public class AnnotationViewModel
             return;
         }
 
-        PageBitmap = await _pdfService.RenderPageAsync(PdfPath, CurrentPage, 150, PageRotation);
+        PageBitmap = await _pdfService.RenderPageAsync(PdfPath, CurrentPage, 150);
         RefreshPreview();
     }
 
@@ -197,15 +192,5 @@ public class AnnotationViewModel
         SelectedCodePreview = row?.Code ?? string.Empty;
     }
     
-    private void RotateLeft()
-    {
-        PageRotation = (PageRotation - 90 + 360) % 360;
-        _ = LoadPageAsync();
-    }
-    
-    private void RotateRight()
-    {
-        PageRotation = (PageRotation + 90) % 360;
-        _ = LoadPageAsync();
-    }
+
 }

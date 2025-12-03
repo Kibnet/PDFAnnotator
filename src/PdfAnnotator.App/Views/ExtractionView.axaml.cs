@@ -64,63 +64,16 @@ public partial class ExtractionView : UserControl
         var pdfX1 = Vm.X1;
         var pdfY1 = Vm.Y1;
         
-        // Get current bitmap dimensions (after rotation)
-        var currentWidth = PageImage.Source is Bitmap bmp ? bmp.PixelSize.Width : PageImage.Bounds.Width;
-        var currentHeight = PageImage.Source is Bitmap bm ? bm.PixelSize.Height : PageImage.Bounds.Height;
-        
-        // Get original dimensions (before rotation)
-        double originalWidth = currentWidth;
-        double originalHeight = currentHeight;
-        if (Vm.PageRotation == 90 || Vm.PageRotation == 270)
-        {
-            // Swap dimensions back to original
-            originalWidth = currentHeight;
-            originalHeight = currentWidth;
-        }
-        
         // Convert from PDF coordinate system (bottom-left origin) to bitmap coordinate system (top-left origin)
-        var bitmapX0 = pdfX0;
-        var bitmapY0 = originalHeight - pdfY1;  // Y1 in PDF corresponds to the top in bitmap
-        var bitmapX1 = pdfX1;
-        var bitmapY1 = originalHeight - pdfY0;  // Y0 in PDF corresponds to the bottom in bitmap
-        
-        // Transform coordinates based on rotation
-        double rotatedX0, rotatedY0, rotatedX1, rotatedY1;
-        
-        switch (Vm.PageRotation)
-        {
-            case 90:
-                // 90° clockwise rotation
-                rotatedX0 = originalHeight - bitmapY1;
-                rotatedY0 = bitmapX0;
-                rotatedX1 = originalHeight - bitmapY0;
-                rotatedY1 = bitmapX1;
-                break;
-            case 180:
-                // 180° rotation
-                rotatedX0 = originalWidth - bitmapX1;
-                rotatedY0 = originalHeight - bitmapY1;
-                rotatedX1 = originalWidth - bitmapX0;
-                rotatedY1 = originalHeight - bitmapY0;
-                break;
-            case 270:
-                // 270° clockwise rotation
-                rotatedX0 = bitmapY0;
-                rotatedY0 = originalWidth - bitmapX1;
-                rotatedX1 = bitmapY1;
-                rotatedY1 = originalWidth - bitmapX0;
-                break;
-            default: // 0°
-                rotatedX0 = bitmapX0;
-                rotatedY0 = bitmapY0;
-                rotatedX1 = bitmapX1;
-                rotatedY1 = bitmapY1;
-                break;
-        }
+        var scale = Vm.Dpi / 72.0;
+        var bitmapX0 = pdfX0 * scale;
+        var bitmapY0 = Vm.OriginalPageHeightPt * scale - pdfY1; // Y-axis flip
+        var bitmapX1 = pdfX1 * scale;
+        var bitmapY1 = Vm.OriginalPageHeightPt * scale - pdfY0;
         
         // Convert bitmap coordinates to view coordinates
-        var startPoint = FromBitmapSpace(new Point(Math.Min(rotatedX0, rotatedX1), Math.Min(rotatedY0, rotatedY1)));
-        var endPoint = FromBitmapSpace(new Point(Math.Max(rotatedX0, rotatedX1), Math.Max(rotatedY0, rotatedY1)));
+        var startPoint = FromBitmapSpace(new Point(Math.Min(bitmapX0, bitmapX1), Math.Min(bitmapY0, bitmapY1)));
+        var endPoint = FromBitmapSpace(new Point(Math.Max(bitmapX0, bitmapX1), Math.Max(bitmapY0, bitmapY1)));
         
         // Update the selection rectangle properties directly
         Vm.SelectLeft = startPoint.X;

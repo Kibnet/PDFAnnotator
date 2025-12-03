@@ -55,20 +55,6 @@ public class ExtractionViewModel
     }
     private int _dpi = 50;
     
-    public int PageRotation 
-    { 
-        get => _pageRotation;
-        set
-        {
-            if (_pageRotation != value)
-            {
-                _pageRotation = value;
-                _ = ReloadPageForRotationChange();
-            }
-        }
-    }
-    private int _pageRotation = 0;  // Rotation angle: 0, 90, 180, or 270
-    
     public Bitmap? PageBitmap { get; set; }
     
     // Store original PDF page dimensions in points (72 DPI) before rotation
@@ -121,8 +107,6 @@ public class ExtractionViewModel
     public ICommand SavePresetCommand { get; }
     public ICommand LoadPresetCommand { get; }
     public ICommand ReloadPresetsCommand { get; }
-    public ICommand RotateLeftCommand { get; }
-    public ICommand RotateRightCommand { get; }
 
     public ExtractionViewModel(IPdfService pdfService, IPresetService presetService, ILogger<ExtractionViewModel> logger)
     {
@@ -135,8 +119,6 @@ public class ExtractionViewModel
         SavePresetCommand = new RelayCommand(async _ => await SavePresetAsync());
         LoadPresetCommand = new RelayCommand(async _ => await ApplyPreset());
         ReloadPresetsCommand = new RelayCommand(async _ => await LoadPresetsAsync());
-        RotateLeftCommand = new RelayCommand(_ => RotateLeft());
-        RotateRightCommand = new RelayCommand(_ => RotateRight());
     }
 
     public async Task LoadPdfAsync()
@@ -164,7 +146,7 @@ public class ExtractionViewModel
         OriginalPageWidthPt = dimensions.width;
         OriginalPageHeightPt = dimensions.height;
 
-        PageBitmap = await _pdfService.RenderPageAsync(PdfPath, CurrentPage, Dpi, PageRotation);
+        PageBitmap = await _pdfService.RenderPageAsync(PdfPath, CurrentPage, Dpi);
         
         // If a preset is already selected, notify that we need to update the selection rectangle
         // This ensures the rectangle is displayed when switching pages or loading a new PDF
@@ -205,39 +187,11 @@ public class ExtractionViewModel
         var pdfCurrentWidth = currentWidth * scale;
         var pdfCurrentHeight = currentHeight * scale;
         
-        // Transform coordinates based on rotation to get original PDF coordinates
-        double pdfX0, pdfY0, pdfX1, pdfY1;
-        
-        switch (PageRotation)
-        {
-            case 90:
-                // 90° clockwise: original top-left is now top-right
-                pdfX0 = pdfMinY;
-                pdfY0 = pdfCurrentWidth - pdfMaxX;
-                pdfX1 = pdfMaxY;
-                pdfY1 = pdfCurrentWidth - pdfMinX;
-                break;
-            case 180:
-                // 180°: original top-left is now bottom-right
-                pdfX0 = pdfCurrentWidth - pdfMaxX;
-                pdfY0 = pdfCurrentHeight - pdfMaxY;
-                pdfX1 = pdfCurrentWidth - pdfMinX;
-                pdfY1 = pdfCurrentHeight - pdfMinY;
-                break;
-            case 270:
-                // 270° clockwise: original top-left is now bottom-left
-                pdfX0 = pdfCurrentHeight - pdfMaxY;
-                pdfY0 = pdfMinX;
-                pdfX1 = pdfCurrentHeight - pdfMinY;
-                pdfY1 = pdfMaxX;
-                break;
-            default: // 0°
-                pdfX0 = pdfMinX;
-                pdfY0 = pdfMinY;
-                pdfX1 = pdfMaxX;
-                pdfY1 = pdfMaxY;
-                break;
-        }
+        // No rotation transformation needed - use coordinates directly
+        double pdfX0 = pdfMinX;
+        double pdfY0 = pdfMinY;
+        double pdfX1 = pdfMaxX;
+        double pdfY1 = pdfMaxY;
         
         // Convert to PDF coordinate system: bottom-left origin
         // Use the stored original PDF page height (in points)
@@ -272,7 +226,7 @@ public class ExtractionViewModel
                 Y1 = Y1
             };
 
-            var rows = await _pdfService.ExtractTextAsync(PdfPath, preset, PageRotation);
+            var rows = await _pdfService.ExtractTextAsync(PdfPath, preset);
             
             // Combine all extracted text for the current page into a single preview
             var previewText = string.Join("\n", rows.Where(r => r.Page == CurrentPage).Select(r => r.FieldText));
@@ -296,7 +250,7 @@ public class ExtractionViewModel
             Y1 = Y1
         };
 
-        var rows = await _pdfService.ExtractTextAsync(PdfPath, preset, PageRotation);
+        var rows = await _pdfService.ExtractTextAsync(PdfPath, preset);
         TableUpdated?.Invoke(this, rows);
     }
 
@@ -368,22 +322,7 @@ public class ExtractionViewModel
         SelectedPreset = preset;
     }
     
-    private void RotateLeft()
-    {
-        PageRotation = (PageRotation - 90 + 360) % 360;
-    }
-    
-    private void RotateRight()
-    {
-        PageRotation = (PageRotation + 90) % 360;
-    }
-    
     private async Task ReloadPageForDpiChange()
-    {
-        await LoadPageAsync();
-    }
-    
-    private async Task ReloadPageForRotationChange()
     {
         await LoadPageAsync();
     }

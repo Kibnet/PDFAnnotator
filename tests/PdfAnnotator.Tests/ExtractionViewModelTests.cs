@@ -57,7 +57,7 @@ public class ExtractionViewModelTests
             new() { Page = 1, FieldText = "Test text 2", Code = "" }
         };
         
-        pdfServiceMock.Setup(x => x.ExtractTextAsync(It.IsAny<string>(), It.IsAny<ExtractionPreset>(), It.IsAny<int>()))
+        pdfServiceMock.Setup(x => x.ExtractTextAsync(It.IsAny<string>(), It.IsAny<ExtractionPreset>()))
             .ReturnsAsync(testRows);
             
         var viewModel = new ExtractionViewModel(

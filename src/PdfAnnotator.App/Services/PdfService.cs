@@ -222,8 +222,9 @@ public class PdfService : IPdfService
             .Where(w => IsInside(w, preset))
             .Select(w => w.Text)
             .ToList();
-        
-        return string.Join(" ", filtered);
+
+        var separator = preset.AddSpacesBetweenWords ? " " : string.Empty;
+        return string.Join(separator, filtered);
     }
 
     private static IEnumerable<Word> OrderWords(IEnumerable<Word> words, TextDirection direction)

@@ -21,6 +21,7 @@ public class ExtractionViewModel
     private readonly ILogger<ExtractionViewModel> _logger;
     private const int RenderDpi = 100;
     private DirectionOption _direction;
+    private bool _addSpacesBetweenWords = true;
 
     public event EventHandler<List<TableRow>>? TableUpdated;
     public event EventHandler? PresetApplied;
@@ -83,6 +84,19 @@ public class ExtractionViewModel
         }
     }
 
+    public bool AddSpacesBetweenWords
+    {
+        get => _addSpacesBetweenWords;
+        set
+        {
+            if (_addSpacesBetweenWords != value)
+            {
+                _addSpacesBetweenWords = value;
+                _ = ExtractTextPreviewAsync();
+            }
+        }
+    }
+
     public ExtractionPreset? SelectedPreset 
     { 
         get => _selectedPreset;
@@ -99,6 +113,7 @@ public class ExtractionViewModel
                 X1 = _selectedPreset.X1;
                 Y1 = _selectedPreset.Y1;
                 Direction = DirectionOptions.First(option => option.Value == _selectedPreset.Direction);
+                AddSpacesBetweenWords = _selectedPreset.AddSpacesBetweenWords;
                 
                 // Notify that the preset has been applied so the view can update the selection rectangle
                 PresetApplied?.Invoke(this, EventArgs.Empty);
@@ -236,7 +251,8 @@ public class ExtractionViewModel
                 Y0 = Y0,
                 X1 = X1,
                 Y1 = Y1,
-                Direction = Direction.Value
+                Direction = Direction.Value,
+                AddSpacesBetweenWords = AddSpacesBetweenWords
             };
 
             // Extract text only from the current page for preview (optimized)
@@ -259,7 +275,8 @@ public class ExtractionViewModel
             Y0 = Y0,
             X1 = X1,
             Y1 = Y1,
-            Direction = Direction.Value
+            Direction = Direction.Value,
+            AddSpacesBetweenWords = AddSpacesBetweenWords
         };
 
         var rows = await _pdfService.ExtractTextAsync(PdfPath, preset);
@@ -279,7 +296,8 @@ public class ExtractionViewModel
             Y0 = Y0,
             X1 = X1,
             Y1 = Y1,
-            Direction = Direction.Value
+            Direction = Direction.Value,
+            AddSpacesBetweenWords = AddSpacesBetweenWords
         };
         await _presetService.SaveExtractionPresetAsync(preset);
         await LoadPresetsAsync();
@@ -336,6 +354,7 @@ public class ExtractionViewModel
         X1 = SelectedPreset.X1;
         Y1 = SelectedPreset.Y1;
         Direction = DirectionOptions.First(option => option.Value == SelectedPreset.Direction);
+        AddSpacesBetweenWords = SelectedPreset.AddSpacesBetweenWords;
         
         // Notify that the preset has been applied so the view can update the selection rectangle
         PresetApplied?.Invoke(this, EventArgs.Empty);

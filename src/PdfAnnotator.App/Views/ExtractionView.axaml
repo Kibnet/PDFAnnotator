@@ -88,6 +88,8 @@
                                         </DataTemplate>
                                     </ComboBox.ItemTemplate>
                                 </ComboBox>
+                                <CheckBox Content="Добавлять пробелы между словами"
+                                          IsChecked="{Binding AddSpacesBetweenWords}"/>
                             </StackPanel>
                             <Button Content="Извлечь текст" Command="{Binding ExtractTextCommand}" HorizontalAlignment="Stretch"/>
                         </StackPanel>

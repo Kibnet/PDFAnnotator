@@ -6,58 +6,95 @@
              d:DesignHeight="1000"
              d:DesignWidth="1200"
              x:DataType="viewmodels:ExtractionViewModel">
-    <Grid ColumnDefinitions="500,*">
-        <StackPanel Margin="12" Spacing="8">
-            <TextBlock Text="Режим: извлечение" FontWeight="Bold"/>
-            <TextBox Watermark="Путь к PDF" Text="{Binding PdfPath, UpdateSourceTrigger=PropertyChanged}"/>
-            <StackPanel Orientation="Horizontal" Spacing="8">
-                <Button Content="Открыть PDF" Click="OnOpenPdfClick" Command="{Binding LoadPdfCommand}"/>
-                <TextBlock Text="{Binding PageCount, StringFormat='Страниц: {0}'}"/>
-            </StackPanel>
-            <StackPanel Orientation="Horizontal" Spacing="8">
-                <TextBlock Text="Страница"/>
-                <NumericUpDown Width="180" Minimum="1" Maximum="{Binding PageCount}" Value="{Binding CurrentPage}"/>
-            </StackPanel>
-            <StackPanel Orientation="Horizontal" Spacing="8">
-                <TextBlock Text="Пресет"/>
-                <ComboBox Width="160" ItemsSource="{Binding Presets}" SelectedItem="{Binding SelectedPreset}">
-                    <ComboBox.ItemTemplate>
-                        <DataTemplate>
-                            <TextBlock Text="{Binding Name}"/>
-                        </DataTemplate>
-                    </ComboBox.ItemTemplate>
-                </ComboBox>
-                <Button Content="Обновить" Command="{Binding ReloadPresetsCommand}"/>
-            </StackPanel>
-            <StackPanel Orientation="Horizontal" Spacing="8">
-                <TextBlock Text="Название"/>
-                <TextBox Width="160" Watermark="Имя пресета" Text="{Binding PresetName, UpdateSourceTrigger=PropertyChanged}"/>
-            </StackPanel>
-            <StackPanel Orientation="Horizontal" Spacing="8">
-                <Button Content="Сохранить пресет" Command="{Binding SavePresetCommand}"/>
-				<Button Content="Загрузить пресет" Command="{Binding LoadPresetCommand}"/>
-                <Button Content="Переименовать" Command="{Binding RenamePresetCommand}"/>
-                <Button Content="Удалить" Command="{Binding DeletePresetCommand}"/>
-                <Button Content="Извлечь текст" Command="{Binding ExtractTextCommand}"/>
-            </StackPanel>
-            <StackPanel>
-                <TextBlock Text="Прямоугольник (PDF координаты):"/>
-                <TextBlock Text="{Binding X0, StringFormat='X0: {0:F1}'}"/>
-                <TextBlock Text="{Binding Y0, StringFormat='Y0: {0:F1}'}"/>
-                <TextBlock Text="{Binding X1, StringFormat='X1: {0:F1}'}"/>
-                <TextBlock Text="{Binding Y1, StringFormat='Y1: {0:F1}'}"/>
-            </StackPanel>
-            <!-- Text Preview Section -->
-            <StackPanel>
-                <TextBlock Text="Предварительный просмотр извлеченного текста:" FontWeight="Bold"/>
-                <TextBox Text="{Binding ExtractedTextPreview}"
-                         MinHeight="100"
-                         MaxHeight="200"
-                         IsReadOnly="True"
-                         TextWrapping="Wrap"
-                         ScrollViewer.VerticalScrollBarVisibility="Auto"/>
-            </StackPanel>
-        </StackPanel>
+    <Grid ColumnDefinitions="380,*">
+        <Border Grid.Column="0" Padding="10" Background="#0D000000">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel Spacing="10">
+                    <TextBlock Text="Режим: извлечение" FontWeight="Bold" FontSize="16"/>
+
+                    <Border Padding="8" Background="#08000000" CornerRadius="4">
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="Документ" FontWeight="SemiBold"/>
+                            <TextBox Watermark="Путь к PDF"
+                                     Text="{Binding PdfPath, UpdateSourceTrigger=PropertyChanged}"
+                                     HorizontalAlignment="Stretch"/>
+                            <WrapPanel ItemSpacing="8" VerticalAlignment="Center">
+                                <Button Content="Открыть PDF" Click="OnOpenPdfClick" Command="{Binding LoadPdfCommand}"/>
+                                <TextBlock Text="{Binding PageCount, StringFormat='Страниц: {0}'}"
+                                           VerticalAlignment="Center"/>
+                                <NumericUpDown Minimum="1" FormatString="N0"
+                                               Maximum="{Binding PageCount}"
+                                               Value="{Binding CurrentPage}"/>
+                            </WrapPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Padding="8" Background="#08000000" CornerRadius="4">
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="Пресеты" FontWeight="SemiBold"/>
+                            <WrapPanel ItemSpacing="8">
+                                <ComboBox MinWidth="180"
+                                          ItemsSource="{Binding Presets}"
+                                          SelectedItem="{Binding SelectedPreset}">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding Name}"/>
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+                                <Button Content="Обновить" Command="{Binding ReloadPresetsCommand}"/>
+                            </WrapPanel>
+                            <TextBox Watermark="Имя пресета"
+                                     Text="{Binding PresetName, UpdateSourceTrigger=PropertyChanged}"
+                                     HorizontalAlignment="Stretch"/>
+                            <WrapPanel ItemSpacing="8">
+                                <Button Content="Сохранить" Command="{Binding SavePresetCommand}"/>
+                                <Button Content="Загрузить" Command="{Binding LoadPresetCommand}"/>
+                                <Button Content="Переименовать" Command="{Binding RenamePresetCommand}"/>
+                                <Button Content="Удалить" Command="{Binding DeletePresetCommand}"/>
+                            </WrapPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Padding="8" Background="#08000000" CornerRadius="4">
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="Выделение" FontWeight="SemiBold"/>
+                            <WrapPanel ItemSpacing="12">
+                                <StackPanel Spacing="2">
+                                    <TextBlock Text="X0" Foreground="#808080"/>
+                                    <TextBlock Text="{Binding X0, StringFormat=N2}"/>
+                                </StackPanel>
+                                <StackPanel Spacing="2">
+                                    <TextBlock Text="Y0" Foreground="#808080"/>
+                                    <TextBlock Text="{Binding Y0, StringFormat=N2}"/>
+                                </StackPanel>
+                                <StackPanel Spacing="2">
+                                    <TextBlock Text="X1" Foreground="#808080"/>
+                                    <TextBlock Text="{Binding X1, StringFormat=N2}"/>
+                                </StackPanel>
+                                <StackPanel Spacing="2">
+                                    <TextBlock Text="Y1" Foreground="#808080"/>
+                                    <TextBlock Text="{Binding Y1, StringFormat=N2}"/>
+                                </StackPanel>
+                            </WrapPanel>
+                            <Button Content="Извлечь текст" Command="{Binding ExtractTextCommand}" HorizontalAlignment="Stretch"/>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Padding="8" Background="#08000000" CornerRadius="4">
+                        <StackPanel Spacing="6">
+                            <TextBlock Text="Предпросмотр текста" FontWeight="SemiBold"/>
+                            <TextBox Text="{Binding ExtractedTextPreview}"
+                                     MinHeight="120"
+                                     MaxHeight="220"
+                                     IsReadOnly="True"
+                                     TextWrapping="Wrap"
+                                     ScrollViewer.VerticalScrollBarVisibility="Auto"/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+        </Border>
 
         <Border Grid.Column="1" Margin="12" Background="Gray">
             <Viewbox Stretch="Uniform">

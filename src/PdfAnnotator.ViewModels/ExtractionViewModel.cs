@@ -268,6 +268,12 @@ public class ExtractionViewModel
 
     private async Task ExtractAsync()
     {
+        if (string.IsNullOrWhiteSpace(PdfPath) || !File.Exists(PdfPath))
+        {
+            _logger.LogWarning("PDF path is empty or missing");
+            return;
+        }
+
         var preset = new ExtractionPreset
         {
             Name = SelectedPreset?.Name ?? "Current",
@@ -279,8 +285,15 @@ public class ExtractionViewModel
             AddSpacesBetweenWords = AddSpacesBetweenWords
         };
 
-        var rows = await _pdfService.ExtractTextAsync(PdfPath, preset);
-        TableUpdated?.Invoke(this, rows);
+        try
+        {
+            var rows = await _pdfService.ExtractTextAsync(PdfPath, preset);
+            TableUpdated?.Invoke(this, rows);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to extract text for table");
+        }
     }
 
     private async Task SavePresetAsync()

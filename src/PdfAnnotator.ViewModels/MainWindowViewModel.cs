@@ -30,7 +30,13 @@ public class MainWindowViewModel
     public TableViewModel Table { get; }
     public AnnotationViewModel Annotation { get; }
 
+    [AlsoNotifyFor(nameof(ModeIndex))]
     public AppMode Mode { get; set; } = AppMode.Extraction;
+    public int ModeIndex
+    {
+        get => (int)Mode;
+        set => Mode = (AppMode)Math.Clamp(value, 0, Enum.GetValues<AppMode>().Length - 1);
+    }
 
     public ICommand GoToTableCommand { get; }
     public ICommand GoToAnnotationCommand { get; }

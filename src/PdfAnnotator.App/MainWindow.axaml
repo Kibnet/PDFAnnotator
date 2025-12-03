@@ -8,7 +8,7 @@
         x:Class="PdfAnnotator.App.MainWindow"
         x:DataType="viewmodels:MainWindowViewModel"
         Title="PDF Extract → Table → Annotate">
-    <TabControl SelectedIndex="{Binding Mode}">
+    <TabControl SelectedIndex="{Binding ModeIndex}">
         <TabItem Header="Извлечение">
             <views:ExtractionView DataContext="{Binding Extraction}"/>
         </TabItem>
@@ -20,3 +20,4 @@
         </TabItem>
     </TabControl>
 </Window>
+

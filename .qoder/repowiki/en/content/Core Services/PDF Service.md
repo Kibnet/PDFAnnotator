@@ -2,22 +2,30 @@
 
 <cite>
 **Referenced Files in This Document**
-- [IPdfService.cs](file://src/PdfAnnotator.Core/Services/IPdfService.cs)
-- [PdfService.cs](file://src/PdfAnnotator.App/Services/PdfService.cs)
-- [AnnotationPreset.cs](file://src/PdfAnnotator.Core/Models/AnnotationPreset.cs)
-- [ExtractionPreset.cs](file://src/PdfAnnotator.Core/Models/ExtractionPreset.cs)
-- [PdfProject.cs](file://src/PdfAnnotator.Core\Models/PdfProject.cs)
+- [IPdfService.cs](file://src/PdfAnnotator.Core/Services/IPdfService.cs) - *Updated with new text extraction methods*
+- [PdfService.cs](file://src/PdfAnnotator.App/Services/PdfService.cs) - *Enhanced with text direction handling and caching improvements*
+- [TextDirection.cs](file://src/PdfAnnotator.Core/Models/TextDirection.cs) - *New text direction enumeration added*
+- [ExtractionPreset.cs](file://src/PdfAnnotator.Core/Models/ExtractionPreset.cs) - *Updated with Direction property*
+- [ExtractionViewModel.cs](file://src/PdfAnnotator.ViewModels/ExtractionViewModel.cs) - *Added text direction options and preview functionality*
 - [MainWindowViewModel.cs](file://src/PdfAnnotator.ViewModels/MainWindowViewModel.cs)
-- [AppBootstrapper.cs](file://src\PdfAnnotator.App\Services/AppBootstrapper.cs)
+- [AppBootstrapper.cs](file://src\PdfAnnotator.App\Services\AppBootstrapper.cs)
 - [AnnotationViewModel.cs](file://src\PdfAnnotator.ViewModels\AnnotationViewModel.cs)
-- [ExtractionViewModel.cs](file://src\PdfAnnotator.ViewModels/ExtractionViewModel.cs)
 - [Example.json](file://presets/extraction/Example.json)
 </cite>
+
+## Update Summary
+**Changes Made**
+- Added comprehensive documentation for text direction handling in text extraction
+- Updated caching mechanism documentation with document-level caching details
+- Enhanced coordinate conversion documentation with improved transformation logic
+- Added new section for text direction functionality and implementation
+- Updated core methods analysis with new ExtractTextFromPageAsync method
+- Improved troubleshooting guide with text direction-specific issues
 
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Architecture Overview](#architecture-overview)
-3. [IPdfService Interface](#ipdfservicel-interface)
+3. [IPdfService Interface](#ipdfservice-interface)
 4. [PdfService Implementation](#pdfservice-implementation)
 5. [Integration with Dependencies](#integration-with-dependencies)
 6. [Core Methods Analysis](#core-methods-analysis)
@@ -31,7 +39,7 @@
 
 The PDF Service is a comprehensive PDF processing system built around three core libraries: Docnet for PDF rendering, PdfPig for text extraction, and PdfSharpCore for annotation generation. This service provides essential functionality for PDF manipulation within the PDFAnnotator application, enabling users to render PDF pages as bitmaps, extract text from specified regions, and generate annotated PDFs with customizable styling.
 
-The service architecture follows a modular design pattern, separating concerns between interface definition, implementation, and model definitions. It integrates seamlessly with the application's dependency injection container and provides robust error handling for various PDF processing scenarios.
+The service architecture follows a modular design pattern, separating concerns between interface definition, implementation, and model definitions. It integrates seamlessly with the application's dependency injection container and provides robust error handling for various PDF processing scenarios. Recent enhancements include text direction handling for extracted text, improved caching mechanisms, and refined coordinate conversion processes.
 
 ## Architecture Overview
 
@@ -59,6 +67,7 @@ AP[AnnotationPreset]
 EP[ExtractionPreset]
 PP[PdfProject]
 TR[TableRow]
+TD[TextDirection]
 end
 MWV --> IPS
 EV --> IPS
@@ -70,13 +79,14 @@ PS --> SHARP
 PS --> AP
 PS --> EP
 PS --> TR
+PS --> TD
 PBS --> PS
 ```
 
 **Diagram sources**
 - [IPdfService.cs](file://src/PdfAnnotator.Core/Services/IPdfService.cs#L8-L14)
 - [PdfService.cs](file://src/PdfAnnotator.App/Services/PdfService.cs#L18-L179)
-- [AppBootstrapper.cs](file://src\PdfAnnotator.App\Services/AppBootstrapper.cs#L25-L26)
+- [AppBootstrapper.cs](file://src\PdfAnnotator.App\Services\AppBootstrapper.cs#L25-L26)
 
 ## IPdfService Interface
 
@@ -87,21 +97,29 @@ classDiagram
 class IPdfService {
 <<interface>>
 +Task~int~ GetPageCountAsync(string path)
++Task~(double width, double height)~ GetPageDimensionsAsync(string path, int page)
 +Task~Bitmap~ RenderPageAsync(string path, int page, int dpi)
 +Task~TableRow[]~ ExtractTextAsync(string pdfPath, ExtractionPreset preset)
++Task~string~ ExtractTextFromPageAsync(string pdfPath, int pageNumber, ExtractionPreset preset)
 +Task GenerateAnnotatedPdfAsync(string pdfPath, string outputPdfPath, TableRow[] rows, AnnotationPreset preset)
 }
 class PdfService {
 -ILogger~PdfService~ _logger
--Dictionary~Tuple~string,int,int~, Bitmap~ _renderCache
+-Dictionary~Tuple~string,int,int~~, Bitmap~ _renderCache
 -object _cacheLock
+-string? _cachedPdfPath
+-PdfDocument? _cachedDocument
+-object _documentCacheLock
 +PdfService(ILogger~PdfService~ logger)
 +Task~int~ GetPageCountAsync(string path)
++Task~(double width, double height)~ GetPageDimensionsAsync(string path, int page)
 +Task~Bitmap~ RenderPageAsync(string path, int page, int dpi)
 +Task~TableRow[]~ ExtractTextAsync(string pdfPath, ExtractionPreset preset)
++Task~string~ ExtractTextFromPageAsync(string pdfPath, int pageNumber, ExtractionPreset preset)
 +Task GenerateAnnotatedPdfAsync(string pdfPath, string outputPdfPath, TableRow[] rows, AnnotationPreset preset)
 -bool IsInside(Word word, ExtractionPreset preset)
 -int ParseColor(string colorHex)
+-PdfDocument GetOrOpenDocument(string path)
 }
 IPdfService <|.. PdfService : implements
 ```
@@ -115,11 +133,11 @@ IPdfService <|.. PdfService : implements
 
 ## PdfService Implementation
 
-The PdfService class provides the concrete implementation of the IPdfService interface, leveraging three specialized libraries to deliver comprehensive PDF processing capabilities. The implementation includes sophisticated caching mechanisms, comprehensive error handling, and thread-safe operations.
+The PdfService class provides the concrete implementation of the IPdfService interface, leveraging three specialized libraries to deliver comprehensive PDF processing capabilities. The implementation includes sophisticated caching mechanisms, comprehensive error handling, and thread-safe operations. Recent enhancements include text direction handling for extracted text, improved caching mechanisms, and refined coordinate conversion processes.
 
 ### Core Dependencies and Initialization
 
-The service initialization process establishes logging capabilities and prepares the rendering cache for efficient bitmap storage and retrieval.
+The service initialization process establishes logging capabilities and prepares the rendering cache for efficient bitmap storage and retrieval. The service now includes a document-level cache to avoid repeatedly opening the same PDF file for multiple operations.
 
 **Section sources**
 - [PdfService.cs](file://src/PdfAnnotator.App/Services/PdfService.cs#L18-L27)
@@ -168,7 +186,7 @@ The PDF Service integrates seamlessly with the application's dependency injectio
 The service registration process demonstrates proper singleton pattern implementation for stateless services, ensuring optimal memory usage and performance.
 
 **Section sources**
-- [AppBootstrapper.cs](file://src\PdfAnnotator.App\Services/AppBootstrapper.cs#L25-L26)
+- [AppBootstrapper.cs](file://src\PdfAnnotator.App\Services\AppBootstrapper.cs#L25-L26)
 
 ### ViewModel Integration
 
@@ -220,6 +238,24 @@ The ExtractTextAsync method implements precise text extraction from PDF document
 **Section sources**
 - [PdfService.cs](file://src/PdfAnnotator.App/Services/PdfService.cs#L100-L125)
 
+### ExtractTextFromPageAsync Method
+
+The ExtractTextFromPageAsync method provides optimized text extraction from a single page, enabling faster preview functionality in the UI.
+
+#### Method Signature and Parameters
+- **Parameters**: `string pdfPath` (source PDF), `int pageNumber` (1-based page number), `ExtractionPreset preset` (extraction configuration)
+- **Return Type**: `Task<string>` containing extracted text from the specified page
+- **Purpose**: Used for real-time text preview during region selection
+
+#### Internal Workflow
+1. **Document Access**: Uses GetOrOpenDocument to access the PDF document
+2. **Page Processing**: Calls ExtractTextFromPage to extract text from the specified page
+3. **Text Direction Handling**: Applies text ordering based on the preset's Direction property
+4. **Return Result**: Returns the extracted text as a string
+
+**Section sources**
+- [PdfService.cs](file://src/PdfAnnotator.App/Services/PdfService.cs#L141-L148)
+
 ### GenerateAnnotatedPdfAsync Method
 
 The GenerateAnnotatedPdfAsync method creates annotated PDFs by overlaying text annotations on existing PDF content.
@@ -239,6 +275,51 @@ The GenerateAnnotatedPdfAsync method creates annotated PDFs by overlaying text a
 
 **Section sources**
 - [PdfService.cs](file://src/PdfAnnotator.App/Services/PdfService.cs#L128-L155)
+
+## Text Direction Handling
+
+The PDF Service now supports configurable text direction for extracted text, allowing users to specify the reading order of text within extraction regions.
+
+### TextDirection Enumeration
+
+The TextDirection enum defines four possible text reading directions:
+
+```csharp
+public enum TextDirection
+{
+    LeftToRightTopToBottom = 0,
+    RightToLeftTopToBottom = 1,
+    LeftToRightBottomToTop = 2,
+    RightToLeftBottomToTop = 3
+}
+```
+
+**Section sources**
+- [TextDirection.cs](file://src/PdfAnnotator.Core/Models/TextDirection.cs#L3-L9)
+
+### Text Ordering Algorithm
+
+The OrderWords method implements a sophisticated algorithm to order extracted words according to the specified text direction:
+
+1. **Line Grouping**: Words are grouped into lines based on vertical position with a 5-point tolerance
+2. **Vertical Sorting**: Lines are sorted based on the vertical direction (top-to-bottom or bottom-to-top)
+3. **Horizontal Sorting**: Words within each line are sorted based on the horizontal direction (left-to-right or right-to-left)
+4. **Flattening**: The ordered lines are flattened into a single sequence of words
+
+```mermaid
+flowchart TD
+Start([Extract Words]) --> GroupLines["Group Words into Lines<br/>Based on Vertical Position"]
+GroupLines --> SortVertical["Sort Lines Vertically<br/>Based on Direction"]
+SortVertical --> SortHorizontal["Sort Words Horizontally<br/>Within Each Line"]
+SortHorizontal --> Flatten["Flatten to Single Sequence"]
+Flatten --> Output["Return Ordered Words"]
+```
+
+**Diagram sources**
+- [PdfService.cs](file://src/PdfAnnotator.App/Services/PdfService.cs#L229-L286)
+
+**Section sources**
+- [PdfService.cs](file://src/PdfAnnotator.App/Services/PdfService.cs#L229-L286)
 
 ## Coordinate System Management
 
@@ -301,10 +382,10 @@ LogError --> ThrowError[Rethrow with Context]
 ```
 
 **Diagram sources**
-- [PdfService.cs](file://src\PdfAnnotator.App/Services/PdfService.cs#L51-L96)
+- [PdfService.cs](file://src/PdfAnnotator.App/Services/PdfService.cs#L51-L96)
 
 **Section sources**
-- [PdfService.cs](file://src\PdfAnnotator.App/Services/PdfService.cs#L51-L96)
+- [PdfService.cs](file://src/PdfAnnotator.App/Services/PdfService.cs#L51-L96)
 
 ## Performance Considerations
 
@@ -315,10 +396,11 @@ The PDF Service implements several optimization strategies to handle large docum
 The service employs an intelligent caching mechanism to avoid redundant processing of the same PDF pages at identical resolutions.
 
 #### Cache Design
-- **Key Structure**: `(string path, int page, int dpi)`
-- **Thread Safety**: Lock-based synchronization
+- **Render Cache**: `(string path, int page, int dpi)` as key for bitmap caching
+- **Document Cache**: Single PDF document cached in memory for multiple operations
+- **Thread Safety**: Lock-based synchronization for both caches
 - **Memory Management**: Automatic cleanup through garbage collection
-- **Hit Rate Optimization**: LRU-like behavior through dictionary access patterns
+- **Cache Invalidation**: Document cache cleared when processing a different PDF file
 
 #### Performance Metrics
 - **Cache Efficiency**: Reduces rendering time by 90% for repeated requests
@@ -339,8 +421,8 @@ All PDF operations are implemented asynchronously to prevent UI blocking during 
 The service implements proper resource disposal patterns to prevent memory leaks and ensure optimal performance.
 
 **Section sources**
-- [PdfService.cs](file://src\PdfAnnotator.App/Services/PdfService.cs#L20-L22)
-- [PdfService.cs](file://src\PdfAnnotator.App/Services/PdfService.cs#L31-L35)
+- [PdfService.cs](file://src/PdfAnnotator.App/Services/PdfService.cs#L20-L22)
+- [PdfService.cs](file://src/PdfAnnotator.App/Services/PdfService.cs#L31-L35)
 
 ## Troubleshooting Guide
 
@@ -358,6 +440,20 @@ The service implements proper resource disposal patterns to prevent memory leaks
 1. Compare extraction coordinates with rendered page display
 2. Verify coordinate transformation in both extraction and annotation phases
 3. Test with known coordinates from Example.json preset
+
+#### Text Direction Issues
+
+**Problem**: Extracted text appears in incorrect order or reversed sequence.
+
+**Root Cause**: Incorrect text direction setting in the extraction preset.
+
+**Solution**: Verify the Direction property in the ExtractionPreset and ensure it matches the document's reading order.
+
+**Debug Steps**:
+1. Check the Direction property value in the preset
+2. Test with different text direction options
+3. Verify word ordering in the OrderWords method
+4. Use the text preview feature to validate results
 
 #### Rendering Quality Issues
 
@@ -398,7 +494,7 @@ The service implements proper resource disposal patterns to prevent memory leaks
 - **Progress Reporting**: Provide feedback for long-running operations
 
 **Section sources**
-- [PdfService.cs](file://src\PdfAnnotator.App/Services/PdfService.cs#L164-L177)
+- [PdfService.cs](file://src/PdfAnnotator.App/Services/PdfService.cs#L164-L177)
 
 ## Best Practices
 
@@ -432,4 +528,4 @@ The service implements proper resource disposal patterns to prevent memory leaks
 - **Error Tracking**: Monitor exception rates and implement alerting for critical failures
 
 **Section sources**
-- [PdfService.cs](file://src\PdfAnnotator.App/Services/PdfService.cs#L1-L179)
+- [PdfService.cs](file://src/PdfAnnotator.App/Services/PdfService.cs#L1-L179)

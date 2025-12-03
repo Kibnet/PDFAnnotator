@@ -2,38 +2,50 @@
 
 <cite>
 **Referenced Files in This Document**
-- [ExtractionPreset.cs](file://src/PdfAnnotator.Core/Models/ExtractionPreset.cs)
+- [ExtractionPreset.cs](file://src/PdfAnnotator.Core/Models/ExtractionPreset.cs) - *Updated with Direction and AddSpacesBetweenWords properties*
 - [Example.json](file://presets/extraction/Example.json)
-- [ExtractionViewModel.cs](file://src/PdfAnnotator.ViewModels/ExtractionViewModel.cs)
-- [PdfService.cs](file://src/PdfAnnotator.App/Services/PdfService.cs)
+- [ExtractionViewModel.cs](file://src/PdfAnnotator.ViewModels/ExtractionViewModel.cs) - *Updated to handle new properties*
+- [PdfService.cs](file://src/PdfAnnotator.App/Services/PdfService.cs) - *Updated text extraction logic*
 - [PresetService.cs](file://src/PdfAnnotator.Core/Services/PresetService.cs)
+- [TextDirection.cs](file://src/PdfAnnotator.Core/Models/TextDirection.cs) - *New enum for text direction control*
 - [ExtractionView.axaml.cs](file://src/PdfAnnotator.App/Views/ExtractionView.axaml.cs)
 - [README.md](file://README.md)
 </cite>
+
+## Update Summary
+**Changes Made**
+- Added documentation for new Direction and AddSpacesBetweenWords properties in ExtractionPreset
+- Updated JSON serialization format to include new properties
+- Added section on text extraction control parameters
+- Updated entity definition diagram to reflect new properties
+- Added documentation for TextDirection enum
+- Updated usage workflow to include new text extraction controls
+- Modified coordinate system section to clarify text ordering behavior
 
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Entity Definition](#entity-definition)
 3. [Properties Overview](#properties-overview)
-4. [Coordinate System and PDF Space](#coordinate-system-and-pdf-space)
-5. [JSON Serialization Format](#json-serialization-format)
-6. [Storage and Management](#storage-and-management)
-7. [Usage in Text Extraction Workflow](#usage-in-text-extraction-workflow)
-8. [UI Integration and Selection](#ui-integration-and-selection)
-9. [Coordinate Transformation Process](#coordinate-transformation-process)
-10. [Workflow for Creating and Applying Presets](#workflow-for-creating-and-applying-presets)
-11. [Best Practices and Considerations](#best-practices-and-considerations)
-12. [Troubleshooting Guide](#troubleshooting-guide)
+4. [Text Extraction Control Parameters](#text-extraction-control-parameters)
+5. [Coordinate System and PDF Space](#coordinate-system-and-pdf-space)
+6. [JSON Serialization Format](#json-serialization-format)
+7. [Storage and Management](#storage-and-management)
+8. [Usage in Text Extraction Workflow](#usage-in-text-extraction-workflow)
+9. [UI Integration and Selection](#ui-integration-and-selection)
+10. [Coordinate Transformation Process](#coordinate-transformation-process)
+11. [Workflow for Creating and Applying Presets](#workflow-for-creating-and-applying-presets)
+12. [Best Practices and Considerations](#best-practices-and-considerations)
+13. [Troubleshooting Guide](#troubleshooting-guide)
 
 ## Introduction
 
 The ExtractionPreset entity serves as a fundamental component in the PDFAnnotator application, enabling repeatable and consistent text extraction from specific rectangular regions within PDF documents. It defines a precise area on a PDF page using coordinate boundaries that can be saved, loaded, and reused across different extraction operations.
 
-This entity is crucial for automating text extraction tasks where the same document structure appears consistently across multiple files, allowing users to capture predefined regions without manual reselection for each document.
+This entity is crucial for automating text extraction tasks where the same document structure appears consistently across multiple files, allowing users to capture predefined regions without manual reselection for each document. The updated model now includes text extraction control parameters that allow users to specify text direction and spacing behavior during extraction.
 
 ## Entity Definition
 
-The ExtractionPreset is implemented as a simple data transfer object containing four essential properties that define a rectangular extraction area:
+The ExtractionPreset is implemented as a simple data transfer object containing six essential properties that define a rectangular extraction area and text extraction behavior:
 
 ```mermaid
 classDiagram
@@ -43,6 +55,8 @@ class ExtractionPreset {
 +double Y0
 +double X1
 +double Y1
++TextDirection Direction
++bool AddSpacesBetweenWords
 +getName() string
 +setName(name) void
 +getX0() double
@@ -53,6 +67,10 @@ class ExtractionPreset {
 +setX1(value) void
 +getY1() double
 +setY1(value) void
++getDirection() TextDirection
++setDirection(direction) void
++getAddSpacesBetweenWords() bool
++setAddSpacesBetweenWords(value) void
 }
 class ExtractionViewModel {
 -IPdfService _pdfService
@@ -63,6 +81,8 @@ class ExtractionViewModel {
 +double Y0
 +double X1
 +double Y1
++DirectionOption Direction
++bool AddSpacesBetweenWords
 +UpdateSelection(startX, startY, endX, endY, imageHeight) void
 +ExtractAsync() Task
 +SavePresetAsync() Task
@@ -71,6 +91,7 @@ class ExtractionViewModel {
 class PdfService {
 +ExtractTextAsync(pdfPath, preset) Task~TableRow[]~
 -IsInside(word, preset) bool
+-OrderWords(words, direction) IEnumerable~Word~
 }
 ExtractionViewModel --> ExtractionPreset : "manages"
 PdfService --> ExtractionPreset : "uses for extraction"
@@ -78,12 +99,12 @@ ExtractionViewModel --> PdfService : "delegates extraction"
 ```
 
 **Diagram sources**
-- [ExtractionPreset.cs](file://src/PdfAnnotator.Core/Models/ExtractionPreset.cs#L3-L10)
+- [ExtractionPreset.cs](file://src/PdfAnnotator.Core/Models/ExtractionPreset.cs#L3-L11)
 - [ExtractionViewModel.cs](file://src/PdfAnnotator.ViewModels/ExtractionViewModel.cs#L18-L196)
 - [PdfService.cs](file://src/PdfAnnotator.App/Services/PdfService.cs#L100-L126)
 
 **Section sources**
-- [ExtractionPreset.cs](file://src/PdfAnnotator.Core/Models/ExtractionPreset.cs#L1-L11)
+- [ExtractionPreset.cs](file://src/PdfAnnotator.Core/Models/ExtractionPreset.cs#L1-L12)
 
 ## Properties Overview
 
@@ -124,6 +145,41 @@ These four properties define the rectangular boundary of the extraction area:
 **Section sources**
 - [ExtractionPreset.cs](file://src/PdfAnnotator.Core/Models/ExtractionPreset.cs#L5-L9)
 
+## Text Extraction Control Parameters
+
+### Direction Property
+- **Type**: `TextDirection`
+- **Purpose**: Controls the reading order and text direction for extracted words
+- **Default Value**: `TextDirection.LeftToRightTopToBottom`
+- **Usage**: Determines how words are ordered in the extracted text output
+- **Constraints**: Must be a valid TextDirection enum value
+
+The TextDirection enum defines four possible text flow directions:
+
+| Value | Description |
+|-------|-------------|
+| `LeftToRightTopToBottom` | Standard left-to-right, top-to-bottom reading order |
+| `RightToLeftTopToBottom` | Right-to-left, top-to-bottom (e.g., Arabic, Hebrew) |
+| `LeftToRightBottomToTop` | Left-to-right, bottom-to-top |
+| `RightToLeftBottomToTop` | Right-to-left, bottom-to-top |
+
+**Section sources**
+- [ExtractionPreset.cs](file://src/PdfAnnotator.Core/Models/ExtractionPreset.cs#L10)
+- [TextDirection.cs](file://src/PdfAnnotator.Core/Models/TextDirection.cs#L3-L9)
+
+### AddSpacesBetweenWords Property
+- **Type**: `bool`
+- **Purpose**: Controls whether spaces are added between extracted words
+- **Default Value**: `true`
+- **Usage**: When true, a single space is inserted between consecutive words; when false, words are concatenated without spaces
+- **Constraints**: None (boolean value)
+
+This property allows users to control the formatting of extracted text, particularly useful when extracting data from forms or structured documents where specific spacing is required.
+
+**Section sources**
+- [ExtractionPreset.cs](file://src/PdfAnnotator.Core/Models/ExtractionPreset.cs#L11)
+- [PdfService.cs](file://src/PdfAnnotator.App/Services/PdfService.cs#L226-L227)
+
 ## Coordinate System and PDF Space
 
 The ExtractionPreset operates within the PDF coordinate system, which follows specific conventions:
@@ -134,24 +190,24 @@ The ExtractionPreset operates within the PDF coordinate system, which follows sp
 - **Orientation**: X-axis increases rightward, Y-axis increases upward
 - **Page Dimensions**: Typically 612×792 points for US Letter size (8.5×11 inches)
 
-### Coordinate Transformation Process
-
-The application handles coordinate conversion between different systems:
+### Text Direction and Word Ordering
+The Direction property affects how words are ordered during text extraction:
 
 ```mermaid
 flowchart TD
-Start([Mouse Selection]) --> CalculateBounds["Calculate Selection Bounds<br/>X0 = min(startX, endX)<br/>X1 = max(startX, endX)<br/>Y0 = imageHeight - max(startY, endY)<br/>Y1 = imageHeight - min(startY, endY)"]
-CalculateBounds --> PDFCoords["Convert to PDF Coordinates<br/>Bottom-left Origin"]
-PDFCoords --> ValidateBounds["Validate Bounds<br/>Ensure X0 ≤ X1 and Y0 ≤ Y1"]
-ValidateBounds --> StorePreset["Store in ExtractionPreset"]
-StorePreset --> ExtractText["Use in Text Extraction"]
-ExtractText --> FilterWords["Filter Words Inside Rectangle<br/>word.Left ≥ X0 AND<br/>word.Right ≤ X1 AND<br/>word.Bottom ≥ Y0 AND<br/>word.Top ≤ Y1"]
-FilterWords --> OutputResults["Return Extracted Text"]
+Start["Start Text Extraction"] --> GroupLines["Group Words into Lines<br/>Using vertical position tolerance (5 points)"]
+GroupLines --> SortLines["Sort Lines by Vertical Position<br/>Based on Direction setting"]
+SortLines --> OrderWords["Order Words Within Each Line<br/>Based on horizontal direction"]
+OrderWords --> FilterWords["Filter Words Inside Rectangle"]
+FilterWords --> JoinText["Join Words with Separator<br/>Based on AddSpacesBetweenWords"]
+JoinText --> Output["Return Extracted Text"]
 ```
 
+The text extraction process first groups words into lines based on their vertical position (using a 5-point tolerance), then sorts the lines according to the specified direction, and finally orders the words within each line according to the horizontal reading direction.
+
 **Diagram sources**
-- [ExtractionViewModel.cs](file://src\PdfAnnotator.ViewModels\ExtractionViewModel.cs#L106-L117)
-- [PdfService.cs](file://src\PdfAnnotator.App\Services\PdfService.cs#L158-L162)
+- [PdfService.cs](file://src\PdfAnnotator.App\Services\PdfService.cs#L230-L287)
+- [ExtractionPreset.cs](file://src\PdfAnnotator.Core\Models\ExtractionPreset.cs#L10)
 
 ### Coordinate Validation
 The system ensures coordinate validity through several mechanisms:
@@ -165,7 +221,7 @@ The system ensures coordinate validity through several mechanisms:
 
 ## JSON Serialization Format
 
-The ExtractionPreset is serialized to JSON format for persistent storage and cross-platform compatibility. The serialization follows a straightforward structure:
+The ExtractionPreset is serialized to JSON format for persistent storage and cross-platform compatibility. The serialization follows a straightforward structure with the addition of new text extraction control properties:
 
 ### Standard JSON Schema
 ```json
@@ -174,7 +230,9 @@ The ExtractionPreset is serialized to JSON format for persistent storage and cro
   "x0": 100.0,
   "y0": 100.0,
   "x1": 300.0,
-  "y1": 200.0
+  "y1": 200.0,
+  "direction": "LeftToRightTopToBottom",
+  "addSpacesBetweenWords": true
 }
 ```
 
@@ -186,6 +244,8 @@ The ExtractionPreset is serialized to JSON format for persistent storage and cro
 | `y0` | `Y0` | double | Bottom boundary coordinate |
 | `x1` | `X1` | double | Right boundary coordinate |
 | `y1` | `Y1` | double | Top boundary coordinate |
+| `direction` | `Direction` | TextDirection | Text reading direction |
+| `addSpacesBetweenWords` | `AddSpacesBetweenWords` | boolean | Whether to add spaces between words |
 
 ### Serialization Configuration
 The JSON serialization uses the following configuration:
@@ -193,10 +253,12 @@ The JSON serialization uses the following configuration:
 - **Property Naming**: Lowercase with hyphens (camelCase)
 - **Precision**: Full double precision maintained
 - **Validation**: Automatic type checking during deserialization
+- **Enum Handling**: TextDirection enum is serialized as string values using JsonStringEnumConverter
 
 **Section sources**
 - [Example.json](file://presets/extraction/Example.json#L1-L8)
 - [PresetService.cs](file://src\PdfAnnotator.Core\Services\PresetService.cs#L11-L14)
+- [ExtractionPreset.cs](file://src\PdfAnnotator.Core\Models\ExtractionPreset.cs#L10-L11)
 
 ## Storage and Management
 
@@ -268,6 +330,8 @@ loop For Each Page
 PS->>PDF : Get Page Content
 PS->>Word : Filter Words by Rectangle
 Note over Word : word.Left ≥ X0 AND<br/>word.Right ≤ X1 AND<br/>word.Bottom ≥ Y0 AND<br/>word.Top ≤ Y1
+PS->>PS : Order Words by Direction
+PS->>PS : Join Words with Separator
 PS->>PS : Collect Matching Text
 end
 PS-->>VM : Return Extracted Rows
@@ -278,26 +342,31 @@ VM-->>User : Display Results in Table
 - [PdfService.cs](file://src\PdfAnnotator.App\Services\PdfService.cs#L100-L126)
 - [ExtractionViewModel.cs](file://src\PdfAnnotator.ViewModels\ExtractionViewModel.cs#L119-L132)
 
-### Text Filtering Algorithm
+### Text Filtering and Ordering Algorithm
 
-The core filtering mechanism uses a spatial intersection algorithm:
+The core filtering and ordering mechanism uses a spatial intersection algorithm combined with text direction processing:
 
 ```csharp
-private static bool IsInside(Word word, ExtractionPreset preset)
+private static string ExtractTextFromPage(PdfDocument document, int pageNumber, ExtractionPreset preset)
 {
-    var rect = word.BoundingBox;
-    return rect.Left >= preset.X0 && 
-           rect.Right <= preset.X1 && 
-           rect.Bottom >= preset.Y0 && 
-           rect.Top <= preset.Y1;
+    var page = document.GetPage(pageNumber);
+    var words = page.GetWords();
+    
+    var filtered = OrderWords(words, preset.Direction)
+        .Where(w => IsInside(w, preset))
+        .Select(w => w.Text)
+        .ToList();
+
+    var separator = preset.AddSpacesBetweenWords ? " " : string.Empty;
+    return string.Join(separator, filtered);
 }
 ```
 
-This algorithm ensures that only words completely contained within the specified rectangle are extracted.
+This algorithm ensures that only words completely contained within the specified rectangle are extracted, orders them according to the specified direction, and joins them with the appropriate separator.
 
 **Section sources**
-- [PdfService.cs](file://src\PdfAnnotator.App\Services\PdfService.cs#L100-L126)
-- [PdfService.cs](file://src\PdfAnnotator.App\Services\PdfService.cs#L158-L162)
+- [PdfService.cs](file://src\PdfAnnotator.App\Services\PdfService.cs#L216-L228)
+- [PdfService.cs](file://src\PdfAnnotator.App\Services\PdfService.cs#L230-L287)
 
 ## UI Integration and Selection
 
@@ -315,6 +384,8 @@ class ExtractionViewModel {
 +LoadPresetFromFileAsync(path) Task
 +ApplyPreset() void
 +SavePresetAsync() Task
++DirectionOption Direction
++bool AddSpacesBetweenWords
 }
 class ExtractionView {
 +ComboBox PresetSelector
@@ -339,14 +410,14 @@ ExtractionViewModel --> PresetService : "uses"
 
 1. **Preset Loading**: Available presets are loaded from the `presets/extraction/` directory
 2. **Selection**: Users select a preset from the dropdown menu
-3. **Application**: Selected preset coordinates are applied to the extraction area
+3. **Application**: Selected preset coordinates and text extraction settings are applied to the extraction area
 4. **Validation**: Coordinates are validated against current PDF page dimensions
 
 ### Dynamic Preset Management
 
 The system supports real-time preset operations:
 - **Loading**: Presets can be loaded from JSON files
-- **Saving**: Current extraction area becomes a named preset
+- **Saving**: Current extraction area becomes a named preset with text extraction settings
 - **Reloading**: Preset list refreshes automatically
 - **Deletion**: Not directly supported (requires file system manipulation)
 
@@ -399,6 +470,7 @@ The preset creation process follows these steps:
 flowchart TD
 Start([User Opens PDF]) --> SelectArea["Select Extraction Area<br/>Draw Rectangle on Page"]
 SelectArea --> UpdateCoords["Update ViewModel Coordinates<br/>X0, Y0, X1, Y1"]
+SelectArea --> UpdateTextSettings["Update Text Extraction Settings<br/>Direction and Spacing"]
 UpdateCoords --> SaveChoice{"Save as Preset?"}
 SaveChoice --> |Yes| GenerateName["Generate Preset Name<br/>Use Selected Name or Timestamp"]
 SaveChoice --> |No| ExtractDirectly["Extract Text Directly"]
@@ -419,7 +491,7 @@ When applying an existing preset:
 ```mermaid
 flowchart TD
 LoadPresets["Load Available Presets"] --> SelectPreset["User Selects Preset"]
-SelectPreset --> ApplyPreset["Apply Preset Coordinates<br/>X0 = preset.X0<br/>Y0 = preset.Y0<br/>X1 = preset.X1<br/>Y1 = preset.Y1"]
+SelectPreset --> ApplyPreset["Apply Preset Settings<br/>X0 = preset.X0<br/>Y0 = preset.Y0<br/>X1 = preset.X1<br/>Y1 = preset.Y1<br/>Direction = preset.Direction<br/>AddSpacesBetweenWords = preset.AddSpacesBetweenWords"]
 ApplyPreset --> ValidateBounds["Validate Coordinate Bounds"]
 ValidateBounds --> ReadyForExtraction["Ready for Text Extraction"]
 ReadyForExtraction --> ExtractText["Extract Text Using Preset"]
@@ -434,6 +506,8 @@ ReadyForExtraction --> ExtractText["Extract Text Using Preset"]
 - **Timestamp Generation**: Presets without explicit names get generated timestamps
 - **Empty State**: Initial coordinates are zero until selection is made
 - **Validation**: Coordinates are validated before extraction attempts
+- **Direction Default**: Defaults to LeftToRightTopToBottom if not specified
+- **Spacing Default**: Defaults to true (add spaces between words) if not specified
 
 **Section sources**
 - [ExtractionViewModel.cs](file://src\PdfAnnotator.ViewModels\ExtractionViewModel.cs#L119-L147)
@@ -445,6 +519,12 @@ ReadyForExtraction --> ExtractText["Extract Text Using Preset"]
 - **PDF Dimension Awareness**: Ensure coordinates fit within actual PDF page dimensions
 - **Precision Maintenance**: Use double precision for all coordinate calculations
 - **Coordinate System Consistency**: Maintain bottom-left origin convention
+
+### Text Extraction Control
+- **Direction Selection**: Choose the appropriate text direction based on the document's language and layout
+- **Spacing Configuration**: Set AddSpacesBetweenWords based on the desired output format
+- **Testing**: Verify text extraction results with different direction and spacing settings
+- **Consistency**: Use consistent settings for similar document types
 
 ### Preset Organization
 - **Descriptive Naming**: Use meaningful names that describe the extraction purpose
@@ -491,6 +571,22 @@ ReadyForExtraction --> ExtractText["Extract Text Using Preset"]
 - Check for PDF compression or rendering variations
 - Recreate preset with precise measurements
 
+#### Issue: Unexpected Text Ordering
+**Symptoms**: Extracted text appears in wrong order
+**Cause**: Incorrect Direction setting for the document's text flow
+**Solution**:
+- Verify the correct TextDirection is selected for the document
+- Test different direction settings to find the appropriate one
+- Check if the document uses mixed text directions
+
+#### Issue: Missing Spaces in Extracted Text
+**Symptoms**: Words are concatenated without spaces
+**Cause**: AddSpacesBetweenWords is set to false
+**Solution**:
+- Check the AddSpacesBetweenWords setting in the preset
+- Enable the setting if spaces are needed between words
+- Verify the setting is correctly saved and loaded
+
 #### Issue: Performance Problems
 **Symptoms**: Slow extraction or UI responsiveness
 **Cause**: Large PDF files or inefficient coordinate calculations
@@ -505,6 +601,7 @@ ReadyForExtraction --> ExtractText["Extract Text Using Preset"]
 2. **Visualization**: Overlay extraction rectangles on rendered PDF pages
 3. **Validation**: Use coordinate validation methods to verify boundary correctness
 4. **Testing**: Create test cases with known document layouts and expected results
+5. **Preview**: Use the text preview feature to verify extraction settings before full extraction
 
 **Section sources**
 - [PdfService.cs](file://src\PdfAnnotator.App\Services\PdfService.cs#L24-L27)

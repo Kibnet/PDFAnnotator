@@ -2,17 +2,25 @@
 
 <cite>
 **Referenced Files in This Document**
-- [ExtractionViewModel.cs](file://src/PdfAnnotator.ViewModels/ExtractionViewModel.cs)
-- [ExtractionView.axaml.cs](file://src/PdfAnnotator.App/Views/ExtractionView.axaml.cs)
-- [ExtractionPreset.cs](file://src/PdfAnnotator.Core\Models/ExtractionPreset.cs)
-- [TableRow.cs](file://src/PdfAnnotator.Core\Models/TableRow.cs)
-- [IPdfService.cs](file://src/PdfAnnotator.Core\Services\IPdfService.cs)
-- [IPresetService.cs](file://src/PdfAnnotator.Core\Services\IPresetService.cs)
-- [PdfService.cs](file://src\PdfAnnotator.App\Services\PdfService.cs)
-- [TableViewModel.cs](file://src\PdfAnnotator.ViewModels\TableViewModel.cs)
-- [MainWindowViewModel.cs](file://src\PdfAnnotator.ViewModels\MainWindowViewModel.cs)
-- [Example.json](file://presets\extraction\Example.json)
+- [ExtractionViewModel.cs](file://src/PdfAnnotator.ViewModels/ExtractionViewModel.cs) - *Updated with text direction and space handling controls*
+- [ExtractionPreset.cs](file://src/PdfAnnotator.Core/Models/ExtractionPreset.cs) - *Updated with Direction and AddSpacesBetweenWords properties*
+- [TextDirection.cs](file://src/PdfAnnotator.Core/Models/TextDirection.cs) - *New enum for text direction control*
+- [PdfService.cs](file://src/PdfAnnotator.App/Services/PdfService.cs) - *Updated with text direction and space handling logic*
+- [Example.json](file://presets/extraction/Example.json) - *Updated example with Direction property*
+- [IPdfService.cs](file://src/PdfAnnotator.Core/Services/IPdfService.cs) - *Updated interface with new methods*
+- [ExtractionView.axaml.cs](file://src/PdfAnnotator.App/Views/ExtractionView.axaml.cs) - *Updated view with coordinate conversion*
+- [TextDirectionTests.cs](file://tests/PdfAnnotator.Tests/TextDirectionTests.cs) - *Added tests for text direction functionality*
 </cite>
+
+## Update Summary
+**Changes Made**
+- Added comprehensive documentation for text direction controls and space handling options
+- Updated coordinate conversion explanation with bidirectional transformation details
+- Enhanced ExtractionPreset model documentation with new properties
+- Added detailed implementation of text ordering algorithm based on direction
+- Updated text extraction process to include space handling logic
+- Added examples of text direction configurations in JSON presets
+- Improved error handling documentation for coordinate conversion
 
 ## Table of Contents
 1. [Introduction](#introduction)
@@ -31,7 +39,7 @@
 
 The Extraction Mode in PDFAnnotator provides a comprehensive solution for extracting text from specific regions within PDF documents. This mode enables users to load PDF files, visually select rectangular regions using mouse input, and extract text content from those areas. The system implements sophisticated coordinate conversion between screen space and PDF coordinate systems, manages extraction presets for reusability, and seamlessly integrates with other application modes for data flow continuity.
 
-The extraction process follows a structured workflow: PDF loading and page rendering, interactive region selection through mouse drag operations, text extraction from selected areas, and automatic transition to Table Mode for data manipulation. The system maintains robust error handling for common scenarios such as invalid file paths, missing PDF files, and rendering failures.
+The extraction process follows a structured workflow: PDF loading and page rendering, interactive region selection through mouse drag operations, text extraction from selected areas, and automatic transition to Table Mode for data manipulation. The system maintains robust error handling for common scenarios such as invalid file paths, missing PDF files, and rendering failures. This update introduces enhanced text direction controls and space handling options, allowing users to specify the reading order of extracted text and control spacing between words.
 
 ## System Architecture
 
@@ -53,6 +61,7 @@ subgraph "Data Layer"
 EP[ExtractionPreset]
 TR[TableRow]
 PJ[PdfProject]
+TD[TextDirection]
 end
 subgraph "External Dependencies"
 DOCNET[Docnet Core]
@@ -69,6 +78,7 @@ PDF --> PDFPIG
 PDF --> PDFSHARP
 PDF --> EP
 PDF --> TR
+PDF --> TD
 PS --> EP
 EVM --> TR
 ```
@@ -87,7 +97,7 @@ The ExtractionViewModel serves as the central controller for extraction operatio
 Key responsibilities include:
 - Managing PDF document lifecycle and page rendering
 - Coordinating region selection through mouse input
-- Orchestrating text extraction operations
+- Orchestrating text extraction operations with text direction and space handling options
 - Handling preset management and storage
 - Event propagation for mode transitions
 
@@ -97,7 +107,9 @@ The ExtractionView handles user interface interactions, translating mouse events
 
 ### ExtractionPreset Model
 
-The ExtractionPreset model defines the data structure for storing extraction regions, containing coordinate boundaries (X0, Y0, X1, Y1) and a descriptive name for the preset configuration.
+The ExtractionPreset model defines the data structure for storing extraction regions, containing coordinate boundaries (X0, Y0, X1, Y1), text direction settings, and space handling options. The model now includes two new properties:
+- **Direction**: Specifies the reading order of extracted text (LeftToRightTopToBottom, RightToLeftTopToBottom, LeftToRightBottomToTop, RightToLeftBottomToTop)
+- **AddSpacesBetweenWords**: Controls whether spaces are inserted between extracted words
 
 ### TableRow Model
 
@@ -106,7 +118,7 @@ The TableRow model represents extracted text data with page information, field t
 **Section sources**
 - [ExtractionViewModel.cs](file://src\PdfAnnotator.ViewModels\ExtractionViewModel.cs#L16-L196)
 - [ExtractionView.axaml.cs](file://src\PdfAnnotator.App\Views\ExtractionView.axaml.cs#L14-L157)
-- [ExtractionPreset.cs](file://src\PdfAnnotator.Core\Models\ExtractionPreset.cs#L1-L11)
+- [ExtractionPreset.cs](file://src\PdfAnnotator.Core\Models\ExtractionPreset.cs#L1-L12) - *Updated with Direction and AddSpacesBetweenWords properties*
 - [TableRow.cs](file://src\PdfAnnotator.Core\Models\TableRow.cs#L1-L9)
 
 ## Region Selection Implementation
@@ -134,6 +146,7 @@ View->>View : Clear dragging flag
 VM->>VM : Convert to PDF coordinates (bottom-left origin)
 VM->>VM : Update selection properties (X0, Y0, X1, Y1)
 VM->>VM : Update visual selection display
+VM->>VM : Automatically extract text preview with current settings
 ```
 
 **Diagram sources**
@@ -147,14 +160,14 @@ The UpdateSelection method performs critical coordinate transformations to conve
 Key transformation steps:
 1. **Screen to Bitmap Space**: Converting pointer positions to bitmap pixel coordinates
 2. **Coordinate Normalization**: Determining left/top and right/bottom boundaries
-3. **PDF Coordinate Conversion**: Transforming y-coordinates from top-down to bottom-up orientation
+3. **PDF Coordinate Conversion**: Transforming y-coordinates from top-down to bottom-up orientation using the original PDF page dimensions
 4. **Visual Feedback Update**: Updating selection rectangle properties for display
 
-The coordinate conversion formula ensures accurate positioning regardless of image scaling or DPI settings, maintaining precision across different display configurations.
+The coordinate conversion formula ensures accurate positioning regardless of image scaling or DPI settings, maintaining precision across different display configurations. The system now stores the original PDF page dimensions in points (72 DPI) before rotation, which are used for accurate coordinate conversion.
 
 **Section sources**
-- [ExtractionViewModel.cs](file://src\PdfAnnotator.ViewModels\ExtractionViewModel.cs#L106-L117)
-- [ExtractionView.axaml.cs](file://src\PdfAnnotator.App\Views\ExtractionView.axaml.cs#L66-L71)
+- [ExtractionViewModel.cs](file://src\PdfAnnotator.ViewModels\ExtractionViewModel.cs#L192-L231) - *Updated with bidirectional coordinate conversion*
+- [ExtractionView.axaml.cs](file://src\PdfAnnotator.App\Views\ExtractionView.axaml.cs#L53-L90) - *Updated with coordinate transformation for preset application*
 
 ## Text Extraction Process
 
@@ -167,7 +180,7 @@ flowchart TD
 Start([ExtractTextCommand Triggered]) --> ValidatePDF["Validate PDF Path<br/>and Page Count"]
 ValidatePDF --> PDFValid{"PDF Valid?"}
 PDFValid --> |No| ShowError["Show Error Message"]
-PDFValid --> |Yes| CreatePreset["Create ExtractionPreset<br/>from Current Selection"]
+PDFValid --> |Yes| CreatePreset["Create ExtractionPreset<br/>from Current Selection<br/>with Direction and Space Settings"]
 CreatePreset --> CallService["Call IPdfService.ExtractTextAsync()"]
 CallService --> ServiceSuccess{"Service Success?"}
 ServiceSuccess --> |No| LogError["Log Error and<br/>Show Warning"]
@@ -190,15 +203,17 @@ Extraction algorithm steps:
 1. **Document Opening**: Safely opening the PDF document with proper resource management
 2. **Page Iteration**: Processing each page within the document boundaries
 3. **Word Filtering**: Applying spatial filtering based on the extraction preset coordinates
-4. **Text Aggregation**: Collecting filtered words into coherent text blocks
-5. **Row Creation**: Creating TableRow objects with page information and extracted text
+4. **Text Ordering**: Arranging words according to the specified text direction (LeftToRightTopToBottom, RightToLeftTopToBottom, LeftToRightBottomToTop, RightToLeftBottomToTop)
+5. **Space Handling**: Adding or removing spaces between words based on AddSpacesBetweenWords setting
+6. **Text Aggregation**: Collecting filtered words into coherent text blocks
+7. **Row Creation**: Creating TableRow objects with page information and extracted text
 
 The service handles coordinate validation, boundary checking, and error recovery to ensure robust text extraction capabilities.
 
 **Section sources**
-- [ExtractionViewModel.cs](file://src\PdfAnnotator.ViewModels\ExtractionViewModel.cs#L119-L132)
-- [PdfService.cs](file://src\PdfAnnotator.App\Services\PdfService.cs#L100-L125)
-- [IPdfService.cs](file://src\PdfAnnotator.Core\Services\IPdfService.cs#L11-L12)
+- [ExtractionViewModel.cs](file://src\PdfAnnotator.ViewModels\ExtractionViewModel.cs#L269-L283) - *Updated with text direction and space handling*
+- [PdfService.cs](file://src\PdfAnnotator.App\Services\PdfService.cs#L215-L227) - *Updated with text direction and space handling logic*
+- [IPdfService.cs](file://src\PdfAnnotator.Core\Services\IPdfService.cs#L11-L13) - *Updated with new methods*
 
 ## Preset Management
 
@@ -213,10 +228,10 @@ participant VM as "ExtractionViewModel"
 participant Service as "IPresetService"
 participant Storage as "File System"
 User->>VM : Click Save Preset
-VM->>VM : Create ExtractionPreset from current selection
+VM->>VM : Create ExtractionPreset from current selection<br/>including Direction and AddSpacesBetweenWords
 VM->>VM : Generate preset name (default or timestamp)
 VM->>Service : SaveExtractionPresetAsync(preset)
-Service->>Storage : Write JSON configuration
+Service->>Storage : Write JSON configuration with new properties
 Storage-->>Service : Confirm save
 Service-->>VM : Operation complete
 VM->>VM : Refresh preset list
@@ -225,8 +240,8 @@ VM-->>User : Preset saved and selected
 ```
 
 **Diagram sources**
-- [ExtractionViewModel.cs](file://src\PdfAnnotator.ViewModels\ExtractionViewModel.cs#L134-L147)
-- [IPresetService.cs](file://src\PdfAnnotator.Core\Services\IPresetService.cs#L9-L9)
+- [ExtractionViewModel.cs](file://src\PdfAnnotator.ViewModels\ExtractionViewModel.cs#L286-L304) - *Updated with text direction and space handling*
+- [IPresetService.cs](file://src\PdfAnnotator.Core\Services\IPresetService.cs#L8-L8) - *Updated interface*
 
 ### Preset Loading and Application
 
@@ -234,16 +249,18 @@ The ReloadPresetsCommand refreshes the available preset collection by loading al
 
 Preset loading process:
 1. **Directory Scanning**: Enumerating preset files in the extraction directory
-2. **JSON Deserialization**: Parsing preset configuration files
+2. **JSON Deserialization**: Parsing preset configuration files with backward compatibility for old presets without Direction property
 3. **Collection Management**: Adding presets to the observable collection
 4. **Selection Handling**: Automatically selecting the specified preset
 5. **Region Application**: Applying preset coordinates to the current selection
+6. **Settings Application**: Applying text direction and space handling settings
 
-The system maintains preset uniqueness and handles conflicts by replacing existing entries with newer versions.
+The system maintains preset uniqueness and handles conflicts by replacing existing entries with newer versions. For backward compatibility, presets without a Direction property default to LeftToRightTopToBottom.
 
 **Section sources**
-- [ExtractionViewModel.cs](file://src\PdfAnnotator.ViewModels\ExtractionViewModel.cs#L149-L181)
-- [IPresetService.cs](file://src\PdfAnnotator.Core\Services\IPresetService.cs#L11-L13)
+- [ExtractionViewModel.cs](file://src\PdfAnnotator.ViewModels\ExtractionViewModel.cs#L366-L378) - *Updated with text direction and space handling*
+- [IPresetService.cs](file://src\PdfAnnotator.Core\Services\IPresetService.cs#L12-L14) - *Updated interface*
+- [TextDirectionTests.cs](file://tests/PdfAnnotator.Tests/TextDirectionTests.cs#L57-L77) - *Added test for backward compatibility*
 
 ## PDF Loading and Rendering
 
@@ -267,7 +284,7 @@ Return --> End
 ```
 
 **Diagram sources**
-- [ExtractionViewModel.cs](file://src\PdfAnnotator.ViewModels\ExtractionViewModel.cs#L83-L94)
+- [ExtractionViewModel.cs](file://src\PdfAnnotator.ViewModels\ExtractionViewModel.cs#L156-L166)
 
 ### Page Rendering at Specified DPI
 
@@ -284,8 +301,8 @@ Rendering pipeline:
 The system implements intelligent caching with thread-safe access patterns and memory management to handle large documents efficiently.
 
 **Section sources**
-- [ExtractionViewModel.cs](file://src\PdfAnnotator.ViewModels\ExtractionViewModel.cs#L96-L104)
-- [PdfService.cs](file://src\PdfAnnotator.App\Services\PdfService.cs#L38-L97)
+- [ExtractionViewModel.cs](file://src\PdfAnnotator.ViewModels\ExtractionViewModel.cs#L169-L190)
+- [PdfService.cs](file://src\PdfAnnotator.App\Services\PdfService.cs#L57-L117)
 
 ## Event Propagation and Mode Synchronization
 
@@ -311,7 +328,7 @@ UI->>UI : Show Table Mode interface
 ```
 
 **Diagram sources**
-- [ExtractionViewModel.cs](file://src\PdfAnnotator.ViewModels\ExtractionViewModel.cs#L23-L23)
+- [ExtractionViewModel.cs](file://src\PdfAnnotator.ViewModels\ExtractionViewModel.cs#L282-L283)
 - [MainWindowViewModel.cs](file://src\PdfAnnotator.ViewModels\MainWindowViewModel.cs#L77-L81)
 
 ### Cross-Mode Data Flow
@@ -341,6 +358,7 @@ The extraction system implements comprehensive error handling for typical failur
 | Rendering Failure | PDF corruption or unsupported format | Exception catching and logging | Show error message |
 | Coordinate Out of Bounds | Selection extends beyond page boundaries | Boundary validation | Clip selection to valid area |
 | Service Unavailability | IPdfService unavailable or failed | Null checks and fallback | Retry operation |
+| Text Direction Error | Invalid text direction setting | Default to LeftToRightTopToBottom | Use default direction |
 
 ### Logging and Diagnostics
 
@@ -353,9 +371,9 @@ Logging categories:
 - **Debug Level**: Detailed execution traces for development
 
 **Section sources**
-- [ExtractionViewModel.cs](file://src\PdfAnnotator.ViewModels\ExtractionViewModel.cs#L85-L88)
-- [PdfService.cs](file://src\PdfAnnotator.App\Services\PdfService.cs#L51-L54)
-- [PdfService.cs](file://src\PdfAnnotator.App\Services\PdfService.cs#L93-L96)
+- [ExtractionViewModel.cs](file://src\PdfAnnotator.ViewModels\ExtractionViewModel.cs#L159-L160)
+- [PdfService.cs](file://src\PdfAnnotator.App\Services\PdfService.cs#L114-L116)
+- [ExtractionViewModel.cs](file://src\PdfAnnotator.ViewModels\ExtractionViewModel.cs#L263-L265) - *Updated with text extraction preview error handling*
 
 ## User Workflow Examples
 
@@ -364,9 +382,11 @@ Logging categories:
 1. **PDF Loading**: User selects a PDF file through the Open PDF dialog
 2. **Page Navigation**: User navigates to the desired page using page controls
 3. **Region Selection**: User clicks and drags to define extraction area
-4. **Text Extraction**: User clicks Extract Text to process the selection
-5. **Data Review**: System automatically transitions to Table Mode for review
-6. **Preset Saving**: User saves the successful extraction as a preset for future use
+4. **Text Direction Setting**: User selects appropriate text direction (e.g., RightToLeftTopToBottom for Arabic text)
+5. **Space Handling Setting**: User configures whether spaces should be added between words
+6. **Text Extraction**: User clicks Extract Text to process the selection
+7. **Data Review**: System automatically transitions to Table Mode for review
+8. **Preset Saving**: User saves the successful extraction as a preset for future use
 
 ### Advanced Preset Management Workflow
 
@@ -390,6 +410,8 @@ Logging categories:
 
 **DPI Configuration**: Use higher DPI values (300-600) for detailed documents, lower DPI (72-150) for quick previews
 **Selection Precision**: Make selections tight around text areas to minimize noise
+**Text Direction**: Select appropriate text direction based on document language (LeftToRightTopToBottom for English, RightToLeftTopToBottom for Arabic/Hebrew)
+**Space Handling**: Enable AddSpacesBetweenWords for normal text extraction, disable for continuous data fields
 **Preset Organization**: Group related extractions by document type or business process
 **File Management**: Maintain organized preset directories with descriptive naming conventions
 
@@ -417,6 +439,14 @@ Logging categories:
 **Issue**: Coordinate conversion errors
 - **Cause**: Screen resolution changes or display scaling issues
 - **Solution**: Recreate presets or adjust coordinate calculations
+
+**Issue**: Text appears in wrong order
+- **Cause**: Incorrect text direction setting for the document language
+- **Solution**: Change Direction setting to match document reading order
+
+**Issue**: Extra spaces in extracted text
+- **Cause**: AddSpacesBetweenWords enabled for continuous data fields
+- **Solution**: Disable AddSpacesBetweenWords for fields that should be continuous
 
 ### Integration Guidelines
 

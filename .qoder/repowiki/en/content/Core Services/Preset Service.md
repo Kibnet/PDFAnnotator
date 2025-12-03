@@ -2,16 +2,25 @@
 
 <cite>
 **Referenced Files in This Document**
-- [IPresetService.cs](file://src/PdfAnnotator.Core/Services/IPresetService.cs)
-- [PresetService.cs](file://src/PdfAnnotator.Core/Services/PresetService.cs)
-- [ExtractionPreset.cs](file://src/PdfAnnotator.Core\Models\ExtractionPreset.cs)
-- [AnnotationPreset.cs](file://src\PdfAnnotator.Core\Models\AnnotationPreset.cs)
-- [PresetServiceTests.cs](file://tests\PdfAnnotator.Tests\PresetServiceTests.cs)
-- [AnnotationViewModel.cs](file://src\PdfAnnotator.ViewModels\AnnotationViewModel.cs)
-- [ExtractionViewModel.cs](file://src\PdfAnnotator.ViewModels\ExtractionViewModel.cs)
-- [Example.json](file://presets\extraction\Example.json)
-- [Example.json](file://presets\annotation\Example.json)
+- [IPresetService.cs](file://src/PdfAnnotator.Core/Services/IPresetService.cs) - *Updated with DeleteExtractionPresetAsync and RenameExtractionPresetAsync*
+- [PresetService.cs](file://src/PdfAnnotator.Core/Services/PresetService.cs) - *Updated with DeleteExtractionPresetAsync and RenameExtractionPresetAsync implementations*
+- [ExtractionPreset.cs](file://src/PdfAnnotator.Core/Models/ExtractionPreset.cs)
+- [AnnotationPreset.cs](file://src/PdfAnnotator.Core/Models/AnnotationPreset.cs)
+- [PresetServiceTests.cs](file://tests/PdfAnnotator.Tests/PresetServiceTests.cs)
+- [AnnotationViewModel.cs](file://src/PdfAnnotator.ViewModels/AnnotationViewModel.cs)
+- [ExtractionViewModel.cs](file://src/PdfAnnotator.ViewModels/ExtractionViewModel.cs)
+- [Example.json](file://presets/extraction/Example.json)
+- [Example.json](file://presets/annotation/Example.json)
 </cite>
+
+## Update Summary
+**Changes Made**
+- Updated IPresetService interface to include DeleteExtractionPresetAsync and RenameExtractionPresetAsync methods
+- Added implementation of DeleteExtractionPresetAsync and RenameExtractionPresetAsync in PresetService class
+- Updated service architecture diagram to reflect new CRUD operations
+- Added new section for Delete and Rename operations
+- Updated integration with ViewModels to include delete and rename functionality
+- Enhanced error handling and edge cases section with new operation considerations
 
 ## Table of Contents
 1. [Introduction](#introduction)
@@ -33,6 +42,8 @@ The service operates through two primary preset types:
 - **Extraction Presets**: Define rectangular regions (X0, Y0, X1, Y1 coordinates) for text extraction from PDF pages
 - **Annotation Presets**: Store text positioning, font settings, color information, and rotation angles for PDF annotations
 
+This update extends the PresetService with full CRUD (Create, Read, Update, Delete) operations by adding DeleteExtractionPresetAsync and RenameExtractionPresetAsync methods, allowing users to manage their extraction presets more comprehensively.
+
 ## Service Architecture
 
 The Preset Service follows a clean architecture pattern with clear separation of concerns:
@@ -43,6 +54,8 @@ class IPresetService {
 <<interface>>
 +SaveExtractionPresetAsync(ExtractionPreset) Task
 +SaveAnnotationPresetAsync(AnnotationPreset) Task
++DeleteExtractionPresetAsync(string) Task
++RenameExtractionPresetAsync(string, string) Task
 +LoadAllExtractionPresetsAsync() Task~ExtractionPreset[]~
 +LoadAllAnnotationPresetsAsync() Task~AnnotationPreset[]~
 +LoadExtractionPresetAsync(string) Task~ExtractionPreset?~
@@ -53,6 +66,8 @@ class PresetService {
 -JsonSerializerOptions JsonOptions
 +SaveExtractionPresetAsync(ExtractionPreset) Task
 +SaveAnnotationPresetAsync(AnnotationPreset) Task
++DeleteExtractionPresetAsync(string) Task
++RenameExtractionPresetAsync(string, string) Task
 +LoadAllExtractionPresetsAsync() Task~ExtractionPreset[]~
 +LoadAllAnnotationPresetsAsync() Task~AnnotationPreset[]~
 +LoadExtractionPresetAsync(string) Task~ExtractionPreset?~
@@ -80,25 +95,27 @@ PresetService --> AnnotationPreset : manages
 ```
 
 **Diagram sources**
-- [IPresetService.cs](file://src\PdfAnnotator.Core\services\IPresetService.cs#L7-L14)
-- [PresetService.cs](file://src\PdfAnnotator.Core\services\PresetService.cs#L6-L82)
-- [ExtractionPreset.cs](file://src\PdfAnnotator.Core\models\ExtractionPreset.cs#L3-L10)
-- [AnnotationPreset.cs](file://src\PdfAnnotator.Core\models\AnnotationPreset.cs#L3-L12)
+- [IPresetService.cs](file://src/PdfAnnotator.Core/Services/IPresetService.cs#L7-L16)
+- [PresetService.cs](file://src/PdfAnnotator.Core/Services/PresetService.cs#L6-L126)
+- [ExtractionPreset.cs](file://src/PdfAnnotator.Core/Models/ExtractionPreset.cs#L3-L10)
+- [AnnotationPreset.cs](file://src/PdfAnnotator.Core/Models/AnnotationPreset.cs#L3-L12)
 
 **Section sources**
-- [IPresetService.cs](file://src\PdfAnnotator.Core\services\IPresetService.cs#L1-L15)
-- [PresetService.cs](file://src\PdfAnnotator.Core\services\PresetService.cs#L1-L82)
+- [IPresetService.cs](file://src/PdfAnnotator.Core/Services/IPresetService.cs#L1-L17)
+- [PresetService.cs](file://src/PdfAnnotator.Core/Services/PresetService.cs#L1-L128)
 
 ## Core Interfaces and Models
 
 ### IPresetService Interface
 
-The service interface defines five core methods for preset management:
+The service interface defines seven core methods for preset management, now providing full CRUD operations:
 
 | Method | Return Type | Purpose |
 |--------|-------------|---------|
 | `SaveExtractionPresetAsync` | `Task` | Saves an extraction preset to JSON file |
 | `SaveAnnotationPresetAsync` | `Task` | Saves an annotation preset to JSON file |
+| `DeleteExtractionPresetAsync` | `Task` | Deletes an extraction preset by name |
+| `RenameExtractionPresetAsync` | `Task` | Renames an extraction preset and updates its content |
 | `LoadAllExtractionPresetsAsync` | `Task<List<ExtractionPreset>>` | Loads all extraction presets from the extraction directory |
 | `LoadAllAnnotationPresetsAsync` | `Task<List<AnnotationPreset>>` | Loads all annotation presets from the annotation directory |
 | `LoadExtractionPresetAsync` | `Task<ExtractionPreset?>` | Loads a specific extraction preset by file path |
@@ -130,9 +147,9 @@ The AnnotationPreset model stores text positioning and formatting parameters:
 | `FontName` | `string` | Font family name | `"fontName"` | `"Helvetica"` |
 
 **Section sources**
-- [IPresetService.cs](file://src\PdfAnnotator.Core\services\IPresetService.cs#L7-L14)
-- [ExtractionPreset.cs](file://src\PdfAnnotator.Core\models\ExtractionPreset.cs#L3-L10)
-- [AnnotationPreset.cs](file://src\PdfAnnotator.Core\models\AnnotationPreset.cs#L3-L12)
+- [IPresetService.cs](file://src/PdfAnnotator.Core/Services/IPresetService.cs#L7-L16)
+- [ExtractionPreset.cs](file://src/PdfAnnotator.Core/Models/ExtractionPreset.cs#L3-L10)
+- [AnnotationPreset.cs](file://src/PdfAnnotator.Core/Models/AnnotationPreset.cs#L3-L12)
 
 ## PresetService Implementation
 
@@ -160,7 +177,7 @@ end
 ```
 
 **Diagram sources**
-- [PresetService.cs](file://src\PdfAnnotator.Core\services\PresetService.cs#L8-L14)
+- [PresetService.cs](file://src/PdfAnnotator.Core/Services/PresetService.cs#L8-L14)
 
 ### Core Methods Implementation
 
@@ -186,8 +203,26 @@ Both save methods follow a consistent pattern:
 - Implements robust error handling for malformed JSON
 - Returns null for both missing files and deserialization errors
 
+#### Delete and Rename Operations
+
+##### DeleteExtractionPresetAsync
+- Constructs file path using the preset name
+- Checks if the file exists before attempting deletion
+- Uses `File.Delete()` to remove the preset file
+- Returns `Task.CompletedTask` to maintain async signature
+
+##### RenameExtractionPresetAsync
+- Creates old and new file paths based on old and new names
+- Reads the existing preset file content
+- Deserializes the content to an ExtractionPreset object
+- Updates the preset's Name property to the new name
+- Serializes the updated preset to JSON
+- Writes the updated content to the new file path
+- Deletes the old file if the new path differs from the old path
+- Swallows exceptions to maintain consistent error handling behavior
+
 **Section sources**
-- [PresetService.cs](file://src\PdfAnnotator.Core\services\PresetService.cs#L16-L82)
+- [PresetService.cs](file://src/PdfAnnotator.Core/Services/PresetService.cs#L16-L126)
 
 ## JSON Serialization and File Management
 
@@ -208,7 +243,7 @@ Deserialize --> Object["Restored Preset Object"]
 ```
 
 **Diagram sources**
-- [PresetService.cs](file://src\PdfAnnotator.Core\services\PresetService.cs#L11-L14)
+- [PresetService.cs](file://src/PdfAnnotator.Core/Services/PresetService.cs#L11-L14)
 
 ### File Naming Convention
 
@@ -226,7 +261,7 @@ The service automatically creates directories when needed:
 - **Relative Paths**: Uses relative paths from application root
 
 **Section sources**
-- [PresetService.cs](file://src\PdfAnnotator.Core\services\PresetService.cs#L11-L28)
+- [PresetService.cs](file://src/PdfAnnotator.Core/Services/PresetService.cs#L11-L28)
 
 ## Integration with ViewModels
 
@@ -257,8 +292,8 @@ PS-->>VM : Task completion
 ```
 
 **Diagram sources**
-- [AnnotationViewModel.cs](file://src\PdfAnnotator.ViewModels\AnnotationViewModel.cs#L140-L148)
-- [ExtractionViewModel.cs](file://src\PdfAnnotator.ViewModels\ExtractionViewModel.cs#L168-L178)
+- [AnnotationViewModel.cs](file://src/PdfAnnotator.ViewModels/AnnotationViewModel.cs#L140-L148)
+- [ExtractionViewModel.cs](file://src/PdfAnnotator.ViewModels/ExtractionViewModel.cs#L168-L178)
 
 ### AnnotationViewModel Integration
 
@@ -285,10 +320,15 @@ The ExtractionViewModel provides specialized preset loading capabilities:
 - **Manual Path Selection**: Integrates with file picker dialogs
 - **Conflict Resolution**: Handles duplicate preset names by replacing existing entries
 - **Direct Application**: Applies loaded presets immediately to extraction controls
+- **Delete and Rename Support**: Implements commands for deleting and renaming presets
+
+#### Delete and Rename Workflow:
+1. **Delete**: Calls `DeleteExtractionPresetAsync` with the selected preset name, removes from collection
+2. **Rename**: Calls `RenameExtractionPresetAsync` with old and new names, reloads presets, updates selection
 
 **Section sources**
-- [AnnotationViewModel.cs](file://src\PdfAnnotator.ViewModels\AnnotationViewModel.cs#L140-L168)
-- [ExtractionViewModel.cs](file://src\PdfAnnotator.ViewModels\ExtractionViewModel.cs#L140-L195)
+- [AnnotationViewModel.cs](file://src/PdfAnnotator.ViewModels/AnnotationViewModel.cs#L140-L168)
+- [ExtractionViewModel.cs](file://src/PdfAnnotator.ViewModels/ExtractionViewModel.cs#L140-L195)
 
 ## Error Handling and Edge Cases
 
@@ -305,6 +345,8 @@ The service handles various error conditions gracefully:
 - **Missing Files**: `LoadExtractionPresetAsync` returns null for non-existent paths
 - **Access Denied**: Exceptions propagated to caller
 - **Disk Full**: Handled by underlying file system operations
+- **Delete Operations**: Silently handles cases where file doesn't exist
+- **Rename Operations**: Swallows exceptions to maintain consistent behavior
 
 ### JSON Deserialization Errors
 
@@ -325,7 +367,7 @@ ReturnPreset --> End
 ```
 
 **Diagram sources**
-- [PresetService.cs](file://src\PdfAnnotator.Core\services\PresetService.cs#L36-L52)
+- [PresetService.cs](file://src/PdfAnnotator.Core/Services/PresetService.cs#L36-L52)
 
 ### Common Error Scenarios
 
@@ -336,10 +378,12 @@ ReturnPreset --> End
 | Missing directories | Automatically created | No action needed |
 | Permission denied | Throws exception | User intervention required |
 | Concurrent access | Undefined behavior | Locking mechanism required |
+| Non-existent preset for deletion | No operation performed | Verify preset exists before calling |
+| Failed rename operation | Operation silently fails | Check file permissions and paths |
 
 **Section sources**
-- [PresetService.cs](file://src\PdfAnnotator.Core\services\PresetService.cs#L36-L52)
-- [PresetService.cs](file://src\PdfAnnotator.Core\services\PresetService.cs#L61-L80)
+- [PresetService.cs](file://src/PdfAnnotator.Core/Services/PresetService.cs#L36-L52)
+- [PresetService.cs](file://src/PdfAnnotator.Core/Services/PresetService.cs#L61-L80)
 
 ## Testing and Validation
 
@@ -368,7 +412,7 @@ Both test methods follow a consistent pattern:
 5. **Assertion**: Uses `Assert.Contains()` to verify successful operation
 
 **Section sources**
-- [PresetServiceTests.cs](file://tests\PdfAnnotator.Tests\PresetServiceTests.cs#L1-L46)
+- [PresetServiceTests.cs](file://tests/PdfAnnotator.Tests/PresetServiceTests.cs#L1-L46)
 
 ## Common Issues and Troubleshooting
 
@@ -439,8 +483,8 @@ Both test methods follow a consistent pattern:
 ```
 
 **Section sources**
-- [Example.json](file://presets\extraction\Example.json#L1-L8)
-- [Example.json](file://presets\annotation\Example.json#L1-L10)
+- [Example.json](file://presets/extraction/Example.json#L1-L8)
+- [Example.json](file://presets/annotation/Example.json#L1-L10)
 
 ## Best Practices
 

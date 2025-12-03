@@ -77,6 +77,18 @@
                                     <TextBlock Text="{Binding Y1, StringFormat=N2}"/>
                                 </StackPanel>
                             </WrapPanel>
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="Направление текста" FontWeight="SemiBold"/>
+                                <ComboBox ItemsSource="{Binding DirectionOptions}"
+                                          SelectedValue="{Binding Direction}"
+                                          MinWidth="260">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding Title}"/>
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+                            </StackPanel>
                             <Button Content="Извлечь текст" Command="{Binding ExtractTextCommand}" HorizontalAlignment="Stretch"/>
                         </StackPanel>
                     </Border>

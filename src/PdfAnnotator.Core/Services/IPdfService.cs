@@ -11,5 +11,6 @@ public interface IPdfService
     Task<(double width, double height)> GetPageDimensionsAsync(string path, int page);
     Task<Bitmap> RenderPageAsync(string path, int page, int dpi);
     Task<List<TableRow>> ExtractTextAsync(string pdfPath, ExtractionPreset preset);
+    Task<string> ExtractTextFromPageAsync(string pdfPath, int pageNumber, ExtractionPreset preset);
     Task GenerateAnnotatedPdfAsync(string pdfPath, string outputPdfPath, List<TableRow> rows, AnnotationPreset preset);
 }

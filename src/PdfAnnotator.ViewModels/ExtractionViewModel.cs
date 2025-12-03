@@ -20,6 +20,7 @@ public class ExtractionViewModel
     private readonly IPresetService _presetService;
     private readonly ILogger<ExtractionViewModel> _logger;
     private const int RenderDpi = 100;
+    private DirectionOption _direction;
 
     public event EventHandler<List<TableRow>>? TableUpdated;
     public event EventHandler? PresetApplied;
@@ -61,6 +62,26 @@ public class ExtractionViewModel
     public string ExtractedTextPreview { get; set; } = string.Empty;
 
     public ObservableCollection<ExtractionPreset> Presets { get; } = new();
+    public IReadOnlyList<DirectionOption> DirectionOptions { get; } = new List<DirectionOption>
+    {
+        new(TextDirection.LeftToRightTopToBottom, "Слева направо, сверху вниз"),
+        new(TextDirection.RightToLeftTopToBottom, "Справа налево, сверху вниз"),
+        new(TextDirection.LeftToRightBottomToTop, "Слева направо, снизу вверх"),
+        new(TextDirection.RightToLeftBottomToTop, "Справа налево, снизу вверх")
+    };
+
+    public DirectionOption Direction
+    {
+        get => _direction;
+        set
+        {
+            if (_direction != value && value != null)
+            {
+                _direction = value;
+                _ = ExtractTextPreviewAsync();
+            }
+        }
+    }
 
     public ExtractionPreset? SelectedPreset 
     { 
@@ -77,6 +98,7 @@ public class ExtractionViewModel
                 Y0 = _selectedPreset.Y0;
                 X1 = _selectedPreset.X1;
                 Y1 = _selectedPreset.Y1;
+                Direction = DirectionOptions.First(option => option.Value == _selectedPreset.Direction);
                 
                 // Notify that the preset has been applied so the view can update the selection rectangle
                 PresetApplied?.Invoke(this, EventArgs.Empty);
@@ -113,6 +135,7 @@ public class ExtractionViewModel
         ReloadPresetsCommand = new RelayCommand(async _ => await LoadPresetsAsync());
         DeletePresetCommand = new RelayCommand(async _ => await DeletePresetAsync());
         RenamePresetCommand = new RelayCommand(async _ => await RenamePresetAsync());
+        _direction = DirectionOptions.First();
     }
 
     public async Task LoadPdfAsync()
@@ -212,13 +235,12 @@ public class ExtractionViewModel
                 X0 = X0,
                 Y0 = Y0,
                 X1 = X1,
-                Y1 = Y1
+                Y1 = Y1,
+                Direction = Direction.Value
             };
 
-            var rows = await _pdfService.ExtractTextAsync(PdfPath, preset);
-            
-            // Combine all extracted text for the current page into a single preview
-            var previewText = string.Join("\n", rows.Where(r => r.Page == CurrentPage).Select(r => r.FieldText));
+            // Extract text only from the current page for preview (optimized)
+            var previewText = await _pdfService.ExtractTextFromPageAsync(PdfPath, CurrentPage, preset);
             ExtractedTextPreview = string.IsNullOrEmpty(previewText) ? "Нет текста для извлечения" : previewText;
         }
         catch (Exception ex)
@@ -236,7 +258,8 @@ public class ExtractionViewModel
             X0 = X0,
             Y0 = Y0,
             X1 = X1,
-            Y1 = Y1
+            Y1 = Y1,
+            Direction = Direction.Value
         };
 
         var rows = await _pdfService.ExtractTextAsync(PdfPath, preset);
@@ -255,7 +278,8 @@ public class ExtractionViewModel
             X0 = X0,
             Y0 = Y0,
             X1 = X1,
-            Y1 = Y1
+            Y1 = Y1,
+            Direction = Direction.Value
         };
         await _presetService.SaveExtractionPresetAsync(preset);
         await LoadPresetsAsync();
@@ -311,6 +335,7 @@ public class ExtractionViewModel
         Y0 = SelectedPreset.Y0;
         X1 = SelectedPreset.X1;
         Y1 = SelectedPreset.Y1;
+        Direction = DirectionOptions.First(option => option.Value == SelectedPreset.Direction);
         
         // Notify that the preset has been applied so the view can update the selection rectangle
         PresetApplied?.Invoke(this, EventArgs.Empty);
@@ -354,3 +379,5 @@ public class ExtractionViewModel
     }
     
 }
+
+public record DirectionOption(TextDirection Value, string Title);

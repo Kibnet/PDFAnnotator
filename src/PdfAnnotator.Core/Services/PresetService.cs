@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using PdfAnnotator.Core.Models;
 
 namespace PdfAnnotator.Core.Services;
@@ -10,7 +11,8 @@ public class PresetService : IPresetService
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
-        WriteIndented = true
+        WriteIndented = true,
+        Converters = { new JsonStringEnumConverter() }
     };
 
     public Task SaveExtractionPresetAsync(ExtractionPreset preset)
@@ -87,7 +89,7 @@ public class PresetService : IPresetService
         try
         {
             var content = File.ReadAllText(path);
-            var preset = JsonSerializer.Deserialize<ExtractionPreset>(content);
+            var preset = JsonSerializer.Deserialize<ExtractionPreset>(content, JsonOptions);
             return Task.FromResult(preset);
         }
         catch
@@ -113,7 +115,7 @@ public class PresetService : IPresetService
         foreach (var file in Directory.GetFiles(dir, "*.json"))
         {
             var content = File.ReadAllText(file);
-            var preset = JsonSerializer.Deserialize<T>(content);
+            var preset = JsonSerializer.Deserialize<T>(content, JsonOptions);
             if (preset != null)
             {
                 result.Add(preset);

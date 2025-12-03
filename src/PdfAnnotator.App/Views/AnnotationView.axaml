@@ -58,7 +58,7 @@
                 <Grid Width="{Binding PageBitmap.PixelSize.Width}" Height="{Binding PageBitmap.PixelSize.Height}">
                     <Image x:Name="AnnotImage"
                            Source="{Binding PageBitmap}"
-                           Stretch="Fill"
+                           Stretch="Uniform"
                            PointerPressed="OnPointerPressed"/>
                     <Canvas IsHitTestVisible="False"
                             Width="{Binding #AnnotImage.Bounds.Width}"

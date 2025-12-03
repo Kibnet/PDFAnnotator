@@ -19,6 +19,7 @@ public class ExtractionViewModel
     private readonly IPdfService _pdfService;
     private readonly IPresetService _presetService;
     private readonly ILogger<ExtractionViewModel> _logger;
+    private const int RenderDpi = 100;
 
     public event EventHandler<List<TableRow>>? TableUpdated;
     public event EventHandler? PresetApplied;
@@ -41,20 +42,6 @@ public class ExtractionViewModel
         }
     }
 
-    public int Dpi 
-    { 
-        get => _dpi;
-        set
-        {
-            if (_dpi != value)
-            {
-                _dpi = value;
-                _ = ReloadPageForDpiChange();
-            }
-        }
-    }
-    private int _dpi = 50;
-    
     public Bitmap? PageBitmap { get; set; }
     
     // Store original PDF page dimensions in points (72 DPI) before rotation
@@ -146,7 +133,7 @@ public class ExtractionViewModel
         OriginalPageWidthPt = dimensions.width;
         OriginalPageHeightPt = dimensions.height;
 
-        PageBitmap = await _pdfService.RenderPageAsync(PdfPath, CurrentPage, Dpi);
+        PageBitmap = await _pdfService.RenderPageAsync(PdfPath, CurrentPage, RenderDpi);
         
         // If a preset is already selected, notify that we need to update the selection rectangle
         // This ensures the rectangle is displayed when switching pages or loading a new PDF
@@ -172,33 +159,28 @@ public class ExtractionViewModel
         var minY = Math.Min(startY, endY);
         var maxY = Math.Max(startY, endY);
         
-        // Convert bitmap pixels to PDF points (bitmap is at current DPI, PDF is at 72 DPI)
-        var scale = 72.0 / Dpi;
-        var pdfMinX = minX * scale;
-        var pdfMaxX = maxX * scale;
-        var pdfMinY = minY * scale;
-        var pdfMaxY = maxY * scale;
-        
         // Get current bitmap dimensions
-        var currentWidth = PageBitmap?.PixelSize.Width ?? 0;
-        var currentHeight = PageBitmap?.PixelSize.Height ?? 0;
-        
-        // Convert to PDF point dimensions
-        var pdfCurrentWidth = currentWidth * scale;
-        var pdfCurrentHeight = currentHeight * scale;
-        
-        // No rotation transformation needed - use coordinates directly
-        double pdfX0 = pdfMinX;
-        double pdfY0 = pdfMinY;
-        double pdfX1 = pdfMaxX;
-        double pdfY1 = pdfMaxY;
-        
+        var bitmapWidth = PageBitmap?.PixelSize.Width ?? 0;
+        var bitmapHeight = PageBitmap?.PixelSize.Height ?? 0;
+        if (bitmapWidth == 0 || bitmapHeight == 0 || OriginalPageWidthPt == 0 || OriginalPageHeightPt == 0)
+        {
+            return;
+        }
+
+        // Convert bitmap pixels to PDF points using actual page dimensions
+        var scaleX = OriginalPageWidthPt / bitmapWidth;
+        var scaleY = OriginalPageHeightPt / bitmapHeight;
+        var pdfMinX = minX * scaleX;
+        var pdfMaxX = maxX * scaleX;
+        var pdfMinY = minY * scaleY;
+        var pdfMaxY = maxY * scaleY;
+
         // Convert to PDF coordinate system: bottom-left origin
         // Use the stored original PDF page height (in points)
-        X0 = pdfX0;
-        X1 = pdfX1;
-        Y0 = OriginalPageHeightPt - pdfY1;
-        Y1 = OriginalPageHeightPt - pdfY0;
+        X0 = pdfMinX;
+        X1 = pdfMaxX;
+        Y0 = OriginalPageHeightPt - pdfMaxY;
+        Y1 = OriginalPageHeightPt - pdfMinY;
         
         // Automatically extract text for preview when selection changes
         _ = ExtractTextPreviewAsync();
@@ -322,8 +304,4 @@ public class ExtractionViewModel
         SelectedPreset = preset;
     }
     
-    private async Task ReloadPageForDpiChange()
-    {
-        await LoadPageAsync();
-    }
 }

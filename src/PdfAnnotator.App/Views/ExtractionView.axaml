@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+﻿<UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="PdfAnnotator.App.Views.ExtractionView"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -17,8 +17,6 @@
             <StackPanel Orientation="Horizontal" Spacing="8">
                 <TextBlock Text="Страница"/>
                 <NumericUpDown Width="180" Minimum="1" Maximum="{Binding PageCount}" Value="{Binding CurrentPage}"/>
-                <TextBlock Text="DPI"/>
-                <NumericUpDown Width="180" Minimum="50" Maximum="600" Increment="10" Value="{Binding Dpi}"/>
             </StackPanel>
             <StackPanel Orientation="Horizontal" Spacing="8">
                 <TextBlock Text="Пресет"/>
@@ -34,7 +32,7 @@
             <StackPanel Orientation="Horizontal" Spacing="8">
                 <Button Content="Сохранить пресет" Command="{Binding SavePresetCommand}"/>
 				<Button Content="Загрузить пресет" Command="{Binding LoadPresetCommand}"/>
-				<Button Content="Извлечь текст" Command="{Binding ExtractTextCommand}"/>
+                <Button Content="Извлечь текст" Command="{Binding ExtractTextCommand}"/>
             </StackPanel>
             <StackPanel>
                 <TextBlock Text="Прямоугольник (PDF координаты):"/>
@@ -46,11 +44,11 @@
             <!-- Text Preview Section -->
             <StackPanel>
                 <TextBlock Text="Предварительный просмотр извлеченного текста:" FontWeight="Bold"/>
-                <TextBox Text="{Binding ExtractedTextPreview}" 
-                         MinHeight="100" 
-                         MaxHeight="200" 
-                         IsReadOnly="True" 
-                         TextWrapping="Wrap" 
+                <TextBox Text="{Binding ExtractedTextPreview}"
+                         MinHeight="100"
+                         MaxHeight="200"
+                         IsReadOnly="True"
+                         TextWrapping="Wrap"
                          ScrollViewer.VerticalScrollBarVisibility="Auto"/>
             </StackPanel>
         </StackPanel>

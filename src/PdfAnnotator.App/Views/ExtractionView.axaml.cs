@@ -53,7 +53,7 @@ public partial class ExtractionView : UserControl
 
     private void UpdateSelectionFromPreset()
     {
-        if (Vm == null || PageImage?.Source == null)
+        if (Vm == null || PageImage?.Source is not Bitmap bmp)
         {
             return;
         }
@@ -63,13 +63,21 @@ public partial class ExtractionView : UserControl
         var pdfY0 = Vm.Y0;
         var pdfX1 = Vm.X1;
         var pdfY1 = Vm.Y1;
-        
+
+        var bitmapWidth = bmp.PixelSize.Width;
+        var bitmapHeight = bmp.PixelSize.Height;
+        if (bitmapWidth == 0 || bitmapHeight == 0 || Vm.OriginalPageWidthPt == 0 || Vm.OriginalPageHeightPt == 0)
+        {
+            return;
+        }
+
         // Convert from PDF coordinate system (bottom-left origin) to bitmap coordinate system (top-left origin)
-        var scale = Vm.Dpi / 72.0;
-        var bitmapX0 = pdfX0 * scale;
-        var bitmapY0 = Vm.OriginalPageHeightPt * scale - pdfY1; // Y-axis flip
-        var bitmapX1 = pdfX1 * scale;
-        var bitmapY1 = Vm.OriginalPageHeightPt * scale - pdfY0;
+        var scaleX = bitmapWidth / Vm.OriginalPageWidthPt;
+        var scaleY = bitmapHeight / Vm.OriginalPageHeightPt;
+        var bitmapX0 = pdfX0 * scaleX;
+        var bitmapY0 = bitmapHeight - pdfY1 * scaleY; // Y-axis flip
+        var bitmapX1 = pdfX1 * scaleX;
+        var bitmapY1 = bitmapHeight - pdfY0 * scaleY;
         
         // Convert bitmap coordinates to view coordinates
         var startPoint = FromBitmapSpace(new Point(Math.Min(bitmapX0, bitmapX1), Math.Min(bitmapY0, bitmapY1)));

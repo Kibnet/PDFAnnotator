@@ -6,7 +6,7 @@
              d:DesignHeight="1000"
              d:DesignWidth="1200"
              x:DataType="viewmodels:ExtractionViewModel">
-    <Grid ColumnDefinitions="500,*" RowDefinitions="Auto,*">
+    <Grid ColumnDefinitions="500,*">
         <StackPanel Margin="12" Spacing="8">
             <TextBlock Text="Режим: извлечение" FontWeight="Bold"/>
             <TextBox Watermark="Путь к PDF" Text="{Binding PdfPath, UpdateSourceTrigger=PropertyChanged}"/>

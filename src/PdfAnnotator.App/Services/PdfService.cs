@@ -34,6 +34,20 @@ public class PdfService : IPdfService
             return document.NumberOfPages;
         });
     }
+    
+    public Task<(double width, double height)> GetPageDimensionsAsync(string path, int page)
+    {
+        return Task.Run(() =>
+        {
+            using var document = PdfDocument.Open(path);
+            if (page < 1 || page > document.NumberOfPages)
+            {
+                throw new ArgumentOutOfRangeException(nameof(page));
+            }
+            var pdfPage = document.GetPage(page);
+            return (pdfPage.Width, pdfPage.Height);
+        });
+    }
 
     public Task<Bitmap> RenderPageAsync(string path, int page, int dpi, int rotation = 0)
     {

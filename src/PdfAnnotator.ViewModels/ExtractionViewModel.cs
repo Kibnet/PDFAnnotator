@@ -41,9 +41,39 @@ public class ExtractionViewModel
         }
     }
 
-    public int Dpi { get; set; } = 50;
-    public int PageRotation { get; set; } = 0;  // Rotation angle: 0, 90, 180, or 270
+    public int Dpi 
+    { 
+        get => _dpi;
+        set
+        {
+            if (_dpi != value)
+            {
+                _dpi = value;
+                _ = ReloadPageForDpiChange();
+            }
+        }
+    }
+    private int _dpi = 50;
+    
+    public int PageRotation 
+    { 
+        get => _pageRotation;
+        set
+        {
+            if (_pageRotation != value)
+            {
+                _pageRotation = value;
+                _ = ReloadPageForRotationChange();
+            }
+        }
+    }
+    private int _pageRotation = 0;  // Rotation angle: 0, 90, 180, or 270
+    
     public Bitmap? PageBitmap { get; set; }
+    
+    // Store original PDF page dimensions in points (72 DPI) before rotation
+    public double OriginalPageWidthPt { get; set; }
+    public double OriginalPageHeightPt { get; set; }
 
     public double X0 { get; set; }
     public double Y0 { get; set; }
@@ -128,6 +158,11 @@ public class ExtractionViewModel
         {
             return;
         }
+        
+        // Load original PDF page dimensions first
+        var dimensions = await _pdfService.GetPageDimensionsAsync(PdfPath, CurrentPage);
+        OriginalPageWidthPt = dimensions.width;
+        OriginalPageHeightPt = dimensions.height;
 
         PageBitmap = await _pdfService.RenderPageAsync(PdfPath, CurrentPage, Dpi, PageRotation);
         
@@ -141,17 +176,75 @@ public class ExtractionViewModel
         }
     }
 
-    public void UpdateSelection(double startX, double startY, double endX, double endY, double imageHeight)
+    public void UpdateSelection(double startX, double startY, double endX, double endY)
     {
+        // Store the rotated bitmap coordinates for display
         SelectLeft = Math.Min(startX, endX);
         SelectTop = Math.Min(startY, endY);
         SelectWidth = Math.Abs(endX - startX);
         SelectHeight = Math.Abs(endY - startY);
-        X0 = Math.Min(startX, endX);
-        X1 = Math.Max(startX, endX);
+        
+        // Get the bounds in rotated bitmap space
+        var minX = Math.Min(startX, endX);
+        var maxX = Math.Max(startX, endX);
+        var minY = Math.Min(startY, endY);
+        var maxY = Math.Max(startY, endY);
+        
+        // Convert bitmap pixels to PDF points (bitmap is at current DPI, PDF is at 72 DPI)
+        var scale = 72.0 / Dpi;
+        var pdfMinX = minX * scale;
+        var pdfMaxX = maxX * scale;
+        var pdfMinY = minY * scale;
+        var pdfMaxY = maxY * scale;
+        
+        // Get current bitmap dimensions
+        var currentWidth = PageBitmap?.PixelSize.Width ?? 0;
+        var currentHeight = PageBitmap?.PixelSize.Height ?? 0;
+        
+        // Convert to PDF point dimensions
+        var pdfCurrentWidth = currentWidth * scale;
+        var pdfCurrentHeight = currentHeight * scale;
+        
+        // Transform coordinates based on rotation to get original PDF coordinates
+        double pdfX0, pdfY0, pdfX1, pdfY1;
+        
+        switch (PageRotation)
+        {
+            case 90:
+                // 90° clockwise: original top-left is now top-right
+                pdfX0 = pdfMinY;
+                pdfY0 = pdfCurrentWidth - pdfMaxX;
+                pdfX1 = pdfMaxY;
+                pdfY1 = pdfCurrentWidth - pdfMinX;
+                break;
+            case 180:
+                // 180°: original top-left is now bottom-right
+                pdfX0 = pdfCurrentWidth - pdfMaxX;
+                pdfY0 = pdfCurrentHeight - pdfMaxY;
+                pdfX1 = pdfCurrentWidth - pdfMinX;
+                pdfY1 = pdfCurrentHeight - pdfMinY;
+                break;
+            case 270:
+                // 270° clockwise: original top-left is now bottom-left
+                pdfX0 = pdfCurrentHeight - pdfMaxY;
+                pdfY0 = pdfMinX;
+                pdfX1 = pdfCurrentHeight - pdfMinY;
+                pdfY1 = pdfMaxX;
+                break;
+            default: // 0°
+                pdfX0 = pdfMinX;
+                pdfY0 = pdfMinY;
+                pdfX1 = pdfMaxX;
+                pdfY1 = pdfMaxY;
+                break;
+        }
+        
         // Convert to PDF coordinate system: bottom-left origin
-        Y0 = imageHeight - Math.Max(startY, endY);
-        Y1 = imageHeight - Math.Min(startY, endY);
+        // Use the stored original PDF page height (in points)
+        X0 = pdfX0;
+        X1 = pdfX1;
+        Y0 = OriginalPageHeightPt - pdfY1;
+        Y1 = OriginalPageHeightPt - pdfY0;
         
         // Automatically extract text for preview when selection changes
         _ = ExtractTextPreviewAsync();
@@ -278,12 +371,20 @@ public class ExtractionViewModel
     private void RotateLeft()
     {
         PageRotation = (PageRotation - 90 + 360) % 360;
-        _ = LoadPageAsync();
     }
     
     private void RotateRight()
     {
         PageRotation = (PageRotation + 90) % 360;
-        _ = LoadPageAsync();
+    }
+    
+    private async Task ReloadPageForDpiChange()
+    {
+        await LoadPageAsync();
+    }
+    
+    private async Task ReloadPageForRotationChange()
+    {
+        await LoadPageAsync();
     }
 }

@@ -58,18 +58,69 @@ public partial class ExtractionView : UserControl
             return;
         }
 
-        // Convert PDF coordinates to view coordinates for the selection rectangle
-        var imageHeight = PageImage.Source is Bitmap bmp ? bmp.PixelSize.Height : PageImage.Bounds.Height;
+        // Get original PDF coordinates
+        var pdfX0 = Vm.X0;
+        var pdfY0 = Vm.Y0;
+        var pdfX1 = Vm.X1;
+        var pdfY1 = Vm.Y1;
+        
+        // Get current bitmap dimensions (after rotation)
+        var currentWidth = PageImage.Source is Bitmap bmp ? bmp.PixelSize.Width : PageImage.Bounds.Width;
+        var currentHeight = PageImage.Source is Bitmap bm ? bm.PixelSize.Height : PageImage.Bounds.Height;
+        
+        // Get original dimensions (before rotation)
+        double originalWidth = currentWidth;
+        double originalHeight = currentHeight;
+        if (Vm.PageRotation == 90 || Vm.PageRotation == 270)
+        {
+            // Swap dimensions back to original
+            originalWidth = currentHeight;
+            originalHeight = currentWidth;
+        }
         
         // Convert from PDF coordinate system (bottom-left origin) to bitmap coordinate system (top-left origin)
-        var x0 = Vm.X0;
-        var x1 = Vm.X1;
-        var y0 = imageHeight - Vm.Y1;  // Note: Y1 in PDF corresponds to the top in bitmap
-        var y1 = imageHeight - Vm.Y0;  // Note: Y0 in PDF corresponds to the bottom in bitmap
+        var bitmapX0 = pdfX0;
+        var bitmapY0 = originalHeight - pdfY1;  // Y1 in PDF corresponds to the top in bitmap
+        var bitmapX1 = pdfX1;
+        var bitmapY1 = originalHeight - pdfY0;  // Y0 in PDF corresponds to the bottom in bitmap
+        
+        // Transform coordinates based on rotation
+        double rotatedX0, rotatedY0, rotatedX1, rotatedY1;
+        
+        switch (Vm.PageRotation)
+        {
+            case 90:
+                // 90° clockwise rotation
+                rotatedX0 = originalHeight - bitmapY1;
+                rotatedY0 = bitmapX0;
+                rotatedX1 = originalHeight - bitmapY0;
+                rotatedY1 = bitmapX1;
+                break;
+            case 180:
+                // 180° rotation
+                rotatedX0 = originalWidth - bitmapX1;
+                rotatedY0 = originalHeight - bitmapY1;
+                rotatedX1 = originalWidth - bitmapX0;
+                rotatedY1 = originalHeight - bitmapY0;
+                break;
+            case 270:
+                // 270° clockwise rotation
+                rotatedX0 = bitmapY0;
+                rotatedY0 = originalWidth - bitmapX1;
+                rotatedX1 = bitmapY1;
+                rotatedY1 = originalWidth - bitmapX0;
+                break;
+            default: // 0°
+                rotatedX0 = bitmapX0;
+                rotatedY0 = bitmapY0;
+                rotatedX1 = bitmapX1;
+                rotatedY1 = bitmapY1;
+                break;
+        }
         
         // Convert bitmap coordinates to view coordinates
-        var startPoint = FromBitmapSpace(new Point(Math.Min(x0, x1), Math.Min(y0, y1)));
-        var endPoint = FromBitmapSpace(new Point(Math.Max(x0, x1), Math.Max(y0, y1)));
+        var startPoint = FromBitmapSpace(new Point(Math.Min(rotatedX0, rotatedX1), Math.Min(rotatedY0, rotatedY1)));
+        var endPoint = FromBitmapSpace(new Point(Math.Max(rotatedX0, rotatedX1), Math.Max(rotatedY0, rotatedY1)));
         
         // Update the selection rectangle properties directly
         Vm.SelectLeft = startPoint.X;
@@ -116,8 +167,8 @@ public partial class ExtractionView : UserControl
     {
         var scaled = ToBitmapSpace(pos);
         var startScaled = ToBitmapSpace(_start);
-        var imageHeight = PageImage!.Source is Bitmap bmp ? bmp.PixelSize.Height : PageImage.Bounds.Height;
-        Vm!.UpdateSelection(startScaled.X, startScaled.Y, scaled.X, scaled.Y, imageHeight);
+        
+        Vm!.UpdateSelection(startScaled.X, startScaled.Y, scaled.X, scaled.Y);
     }
 
     private async void OnOpenPdfClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)

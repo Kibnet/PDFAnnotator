@@ -70,6 +70,10 @@
                                     <TextBlock Text="Угол"/>
                                     <NumericUpDown Width="120" Minimum="0" Maximum="360" Value="{Binding Angle}"/>
                                 </StackPanel>
+                                <StackPanel Spacing="4">
+                                    <TextBlock Text="Шрифт"/>
+                                    <ComboBox Width="200" ItemsSource="{Binding Fonts}" SelectedItem="{Binding FontName}"/>
+                                </StackPanel>
                             </WrapPanel>
                             <WrapPanel ItemSpacing="12">
                                 <StackPanel Spacing="4">
@@ -81,10 +85,6 @@
                                     <TextBlock Text="{Binding TextY, StringFormat=N2}"/>
                                 </StackPanel>
                             </WrapPanel>
-                            <StackPanel Spacing="4">
-                                <TextBlock Text="Шрифт"/>
-                                <ComboBox Width="200" ItemsSource="{Binding Fonts}" SelectedItem="{Binding FontName}"/>
-                            </StackPanel>
                         </StackPanel>
                     </Border>
 

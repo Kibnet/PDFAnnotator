@@ -65,13 +65,10 @@ public class MainWindowViewModel
 
         Extraction.TableUpdated += OnExtractionTableUpdated;
         Table.RowsUpdated += OnTableUpdated;
+        Extraction.PageChanged += HandleExtractionPageChanged;
 
         GoToTableCommand = new RelayCommand(_ => Mode = AppMode.Table);
-        GoToAnnotationCommand = new RelayCommand(_ =>
-        {
-            SyncTableToAnnotation();
-            Mode = AppMode.Annotation;
-        });
+        GoToAnnotationCommand = new RelayCommand(async _ => await GoToAnnotationAsync());
         GoToExtractionCommand = new RelayCommand(_ => Mode = AppMode.Extraction);
         SaveProjectCommand = new RelayCommand(async _ => await SaveProjectAsync());
         LoadProjectCommand = new RelayCommand(async _ => await LoadProjectAsync());
@@ -94,6 +91,40 @@ public class MainWindowViewModel
     private void SyncTableToAnnotation()
     {
         Annotation.SetRows(Table.Rows.Select(r => r.ToModel()).ToList());
+    }
+
+    private async Task SyncPdfToAnnotationAsync()
+    {
+        if (string.IsNullOrWhiteSpace(Extraction.PdfPath) || Extraction.PageBitmap == null)
+        {
+            return;
+        }
+
+        ApplySnapshotToAnnotation(new PageSnapshot(
+            Extraction.PdfPath,
+            Extraction.PageCount,
+            Extraction.CurrentPage,
+            Extraction.OriginalPageWidthPt,
+            Extraction.OriginalPageHeightPt,
+            Extraction.PageBitmap));
+    }
+
+    private async Task GoToAnnotationAsync()
+    {
+        SyncTableToAnnotation();
+        await SyncPdfToAnnotationAsync();
+        Mode = AppMode.Annotation;
+    }
+
+    private void HandleExtractionPageChanged(object? sender, PageSnapshot snapshot)
+    {
+        ApplySnapshotToAnnotation(snapshot);
+    }
+
+    private void ApplySnapshotToAnnotation(PageSnapshot snapshot)
+    {
+        // Reuse already-rendered bitmap and dimensions from extraction
+        Annotation.ApplyPageSnapshot(snapshot);
     }
 
     public async Task SaveProjectAsync()

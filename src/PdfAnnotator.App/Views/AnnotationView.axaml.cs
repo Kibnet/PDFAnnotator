@@ -1,16 +1,16 @@
+using System.Collections.Generic;
+using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Markup.Xaml;
 using Avalonia.Platform.Storage;
-using Avalonia.VisualTree;
 using Avalonia.Media.Imaging;
 using PdfAnnotator.App.ViewModels;
-using System.Linq;
 
 namespace PdfAnnotator.App.Views;
 
-public partial class AnnotationView : UserControl
+public partial class AnnotationView : PdfPageViewBase
 {
     public AnnotationView()
     {
@@ -20,21 +20,28 @@ public partial class AnnotationView : UserControl
     private void InitializeComponent()
     {
         AvaloniaXamlLoader.Load(this);
+        var image = this.FindControl<Image>("AnnotImage");
+        if (image != null)
+        {
+            AttachImage(image);
+        }
     }
 
     private AnnotationViewModel? Vm => DataContext as AnnotationViewModel;
 
     private void OnPointerPressed(object? sender, PointerPressedEventArgs e)
     {
-        if (Vm == null || AnnotImage?.Source == null)
+        var image = Image;
+        if (Vm == null || image?.Source is not Bitmap bmp)
         {
             return;
         }
 
-        var pos = e.GetPosition(AnnotImage);
+        var pos = e.GetPosition(image);
         var scaled = ToBitmapSpace(pos);
-        var imageHeight = AnnotImage.Source is Bitmap bmp ? bmp.PixelSize.Height : AnnotImage.Bounds.Height;
-        Vm.UpdatePosition(scaled.X, scaled.Y, imageHeight);
+        var bitmapWidth = bmp.PixelSize.Width;
+        var bitmapHeight = bmp.PixelSize.Height;
+        Vm.UpdatePosition(pos.X, pos.Y, scaled.X, scaled.Y, bitmapWidth, bitmapHeight);
     }
 
     private async void OnOpenPdfClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
@@ -68,23 +75,5 @@ public partial class AnnotationView : UserControl
 
         Vm.PdfPath = path;
         await Vm.LoadPdfAsync();
-    }
-
-    private Point ToBitmapSpace(Point viewPoint)
-    {
-        if (AnnotImage?.Source is not Bitmap bmp)
-        {
-            return viewPoint;
-        }
-
-        var bounds = AnnotImage.Bounds;
-        if (bounds.Width <= 0 || bounds.Height <= 0)
-        {
-            return viewPoint;
-        }
-
-        var scaleX = bmp.PixelSize.Width / bounds.Width;
-        var scaleY = bmp.PixelSize.Height / bounds.Height;
-        return new Point(viewPoint.X * scaleX, viewPoint.Y * scaleY);
     }
 }

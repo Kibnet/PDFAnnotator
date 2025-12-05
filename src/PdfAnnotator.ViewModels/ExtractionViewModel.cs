@@ -19,12 +19,12 @@ public class ExtractionViewModel
     private readonly IPdfService _pdfService;
     private readonly IPresetService _presetService;
     private readonly ILogger<ExtractionViewModel> _logger;
-    private const int RenderDpi = 100;
     private DirectionOption _direction;
     private bool _addSpacesBetweenWords = true;
 
     public event EventHandler<List<TableRow>>? TableUpdated;
     public event EventHandler? PresetApplied;
+    public event EventHandler<PageSnapshot>? PageChanged;
 
     public string PdfPath { get; set; } = string.Empty;
 
@@ -161,9 +161,15 @@ public class ExtractionViewModel
             return;
         }
 
-        PageCount = await _pdfService.GetPageCountAsync(PdfPath);
-        CurrentPage = Math.Clamp(CurrentPage, 1, PageCount);
-        await LoadPageAsync();
+        var snapshot = await PageRenderService.RenderPageAsync(_pdfService, PdfPath, CurrentPage);
+        if (snapshot == null)
+        {
+            _logger.LogWarning("Failed to render PDF page");
+            return;
+        }
+
+        ApplySnapshot(snapshot);
+        await PostRenderActionsAsync();
     }
 
     private async Task LoadPageAsync()
@@ -172,37 +178,31 @@ public class ExtractionViewModel
         {
             return;
         }
-        
-        // Load original PDF page dimensions first
-        var dimensions = await _pdfService.GetPageDimensionsAsync(PdfPath, CurrentPage);
-        OriginalPageWidthPt = dimensions.width;
-        OriginalPageHeightPt = dimensions.height;
 
-        PageBitmap = await _pdfService.RenderPageAsync(PdfPath, CurrentPage, RenderDpi);
-        
-        // If a preset is already selected, notify that we need to update the selection rectangle
-        // This ensures the rectangle is displayed when switching pages or loading a new PDF
-        if (SelectedPreset != null)
+        var snapshot = await PageRenderService.RenderPageAsync(_pdfService, PdfPath, CurrentPage, PageCount);
+        if (snapshot == null)
         {
-            PresetApplied?.Invoke(this, EventArgs.Empty);
-            // Also extract text for preview when page changes
-            _ = ExtractTextPreviewAsync();
+            return;
         }
+
+        ApplySnapshot(snapshot);
+        await PostRenderActionsAsync();
     }
 
-    public void UpdateSelection(double startX, double startY, double endX, double endY)
+    public void UpdateSelection(double startXBitmap, double startYBitmap, double endXBitmap, double endYBitmap,
+        double startXView, double startYView, double endXView, double endYView)
     {
-        // Store the rotated bitmap coordinates for display
-        SelectLeft = Math.Min(startX, endX);
-        SelectTop = Math.Min(startY, endY);
-        SelectWidth = Math.Abs(endX - startX);
-        SelectHeight = Math.Abs(endY - startY);
+        // Store the view coordinates for rectangle display
+        SelectLeft = Math.Min(startXView, endXView);
+        SelectTop = Math.Min(startYView, endYView);
+        SelectWidth = Math.Abs(endXView - startXView);
+        SelectHeight = Math.Abs(endYView - startYView);
         
         // Get the bounds in rotated bitmap space
-        var minX = Math.Min(startX, endX);
-        var maxX = Math.Max(startX, endX);
-        var minY = Math.Min(startY, endY);
-        var maxY = Math.Max(startY, endY);
+        var minX = Math.Min(startXBitmap, endXBitmap);
+        var maxX = Math.Max(startXBitmap, endXBitmap);
+        var minY = Math.Min(startYBitmap, endYBitmap);
+        var maxY = Math.Max(startYBitmap, endYBitmap);
         
         // Get current bitmap dimensions
         var bitmapWidth = PageBitmap?.PixelSize.Width ?? 0;
@@ -409,7 +409,45 @@ public class ExtractionViewModel
         Presets.Add(preset);
         SelectedPreset = preset;
     }
-    
+
+    private void ApplySnapshot(PageSnapshot snapshot)
+    {
+        PdfPath = snapshot.PdfPath;
+        PageCount = snapshot.PageCount;
+        _currentPage = snapshot.CurrentPage;
+        OriginalPageWidthPt = snapshot.WidthPt;
+        OriginalPageHeightPt = snapshot.HeightPt;
+        PageBitmap = snapshot.Bitmap;
+        NotifyPageChanged();
+    }
+
+    private async Task PostRenderActionsAsync()
+    {
+        // If a preset is already selected, notify that we need to update the selection rectangle
+        // This ensures the rectangle is displayed when switching pages or loading a new PDF
+        if (SelectedPreset != null)
+        {
+            PresetApplied?.Invoke(this, EventArgs.Empty);
+            // Also extract text for preview when page changes
+            _ = ExtractTextPreviewAsync();
+        }
+        else
+        {
+            await Task.CompletedTask;
+        }
+    }
+
+    private void NotifyPageChanged()
+    {
+        var snapshot = new PageSnapshot(
+            PdfPath,
+            PageCount,
+            CurrentPage,
+            OriginalPageWidthPt,
+            OriginalPageHeightPt,
+            PageBitmap);
+        PageChanged?.Invoke(this, snapshot);
+    }
 }
 
 public record DirectionOption(TextDirection Value, string Title);

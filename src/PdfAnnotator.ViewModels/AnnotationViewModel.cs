@@ -53,11 +53,24 @@ public class AnnotationViewModel
     public double Angle { get; set; }
     public string ColorHex { get; set; } = "#000000";
     public string FontName { get; set; } = "Helvetica";
+    public double OriginalPageWidthPt { get; set; }
+    public double OriginalPageHeightPt { get; set; }
 
     public ObservableCollection<string> Fonts { get; } = new(new[] { "Helvetica", "Arial", "Times New Roman" });
 
     public ObservableCollection<TableRow> Rows { get; } = new();
     public string SelectedCodePreview { get; set; } = string.Empty;
+
+    public void ApplyPageSnapshot(PageSnapshot snapshot)
+    {
+        PdfPath = snapshot.PdfPath;
+        PageCount = snapshot.PageCount;
+        _currentPage = snapshot.CurrentPage;
+        OriginalPageWidthPt = snapshot.WidthPt;
+        OriginalPageHeightPt = snapshot.HeightPt;
+        PageBitmap = snapshot.Bitmap;
+        RefreshPreview();
+    }
 
     public ICommand LoadPdfCommand { get; }
     public ICommand SavePresetCommand { get; }
@@ -86,12 +99,25 @@ public class AnnotationViewModel
         RefreshPreview();
     }
 
-    public void UpdatePosition(double x, double y, double imageHeight)
+    public void UpdatePosition(double viewX, double viewY, double bitmapX, double bitmapY, double bitmapWidth, double bitmapHeight)
     {
-        PreviewX = x;
-        PreviewY = y;
-        TextX = x;
-        TextY = imageHeight - y;
+        // preview in view coordinates for correct overlay positioning
+        PreviewX = viewX;
+        PreviewY = viewY;
+
+        if (OriginalPageWidthPt > 0 && OriginalPageHeightPt > 0 && bitmapWidth > 0 && bitmapHeight > 0)
+        {
+            var scaleX = OriginalPageWidthPt / bitmapWidth;
+            var scaleY = OriginalPageHeightPt / bitmapHeight;
+            TextX = bitmapX * scaleX;
+            TextY = OriginalPageHeightPt - bitmapY * scaleY;
+        }
+        else
+        {
+            // fallback to bitmap space if dimensions are unknown
+            TextX = bitmapX;
+            TextY = bitmapHeight - bitmapY;
+        }
         RefreshPreview();
     }
 
@@ -103,9 +129,14 @@ public class AnnotationViewModel
             return;
         }
 
-        PageCount = await _pdfService.GetPageCountAsync(PdfPath);
-        CurrentPage = 1;
-        await LoadPageAsync();
+        var snapshot = await PageRenderService.RenderPageAsync(_pdfService, PdfPath, CurrentPage);
+        if (snapshot == null)
+        {
+            _logger.LogWarning("Failed to render annotation PDF");
+            return;
+        }
+
+        ApplyPageSnapshot(snapshot);
     }
 
     private async Task LoadPageAsync()
@@ -115,8 +146,13 @@ public class AnnotationViewModel
             return;
         }
 
-        PageBitmap = await _pdfService.RenderPageAsync(PdfPath, CurrentPage, 150);
-        RefreshPreview();
+        var snapshot = await PageRenderService.RenderPageAsync(_pdfService, PdfPath, CurrentPage, PageCount);
+        if (snapshot == null)
+        {
+            return;
+        }
+
+        ApplyPageSnapshot(snapshot);
     }
 
     private async Task SavePresetAsync()

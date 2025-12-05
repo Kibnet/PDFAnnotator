@@ -3,7 +3,6 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Markup.Xaml;
 using Avalonia.Platform.Storage;
-using Avalonia.VisualTree;
 using Avalonia.Media.Imaging;
 using PdfAnnotator.App.ViewModels;
 using System;
@@ -12,7 +11,7 @@ using System.Linq;
 
 namespace PdfAnnotator.App.Views;
 
-public partial class ExtractionView : UserControl
+public partial class ExtractionView : PdfPageViewBase
 {
     private bool _dragging;
     private Point _start;
@@ -25,7 +24,11 @@ public partial class ExtractionView : UserControl
     private void InitializeComponent()
     {
         AvaloniaXamlLoader.Load(this);
-        PageImage = this.Get<Image>("PageImage");
+        PageImage = this.FindControl<Image>("PageImage");
+        if (PageImage != null)
+        {
+            AttachImage(PageImage);
+        }
     }
 
     protected override void OnDataContextChanged(EventArgs e)
@@ -128,8 +131,9 @@ public partial class ExtractionView : UserControl
     {
         var scaled = ToBitmapSpace(pos);
         var startScaled = ToBitmapSpace(_start);
-        
-        Vm!.UpdateSelection(startScaled.X, startScaled.Y, scaled.X, scaled.Y);
+
+        Vm!.UpdateSelection(startScaled.X, startScaled.Y, scaled.X, scaled.Y,
+            _start.X, _start.Y, pos.X, pos.Y);
     }
 
     private async void OnOpenPdfClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
@@ -195,41 +199,5 @@ public partial class ExtractionView : UserControl
         }
 
         await Vm.LoadPresetFromFileAsync(path);
-    }
-
-    private Point ToBitmapSpace(Point viewPoint)
-    {
-        if (PageImage?.Source is not Bitmap bmp)
-        {
-            return viewPoint;
-        }
-
-        var bounds = PageImage.Bounds;
-        if (bounds.Width <= 0 || bounds.Height <= 0)
-        {
-            return viewPoint;
-        }
-
-        var scaleX = bmp.PixelSize.Width / bounds.Width;
-        var scaleY = bmp.PixelSize.Height / bounds.Height;
-        return new Point(viewPoint.X * scaleX, viewPoint.Y * scaleY);
-    }
-    
-    private Point FromBitmapSpace(Point bitmapPoint)
-    {
-        if (PageImage?.Source is not Bitmap bmp)
-        {
-            return bitmapPoint;
-        }
-
-        var bounds = PageImage.Bounds;
-        if (bounds.Width <= 0 || bounds.Height <= 0)
-        {
-            return bitmapPoint;
-        }
-
-        var scaleX = bounds.Width / bmp.PixelSize.Width;
-        var scaleY = bounds.Height / bmp.PixelSize.Height;
-        return new Point(bitmapPoint.X * scaleX, bitmapPoint.Y * scaleY);
     }
 }

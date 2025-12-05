@@ -47,8 +47,29 @@ public class AnnotationViewModel
 
     public string? SelectedPresetName { get; set; }
     public string PresetName { get; set; } = string.Empty;
-    public double TextX { get; set; }
-    public double TextY { get; set; }
+
+    private double _textX;
+    public double TextX 
+    { 
+        get => _textX;
+        set
+        {
+            _textX = value;
+            RefreshPreview();
+        }
+    }
+    
+    private double _textY;
+    public double TextY 
+    { 
+        get => _textY;
+        set
+        {
+            _textY = value;
+            RefreshPreview();
+        }
+    }
+    
     public double PreviewX { get; set; }
     public double PreviewY { get; set; }
     public double FontSize { get; set; } = 12;
@@ -117,14 +138,14 @@ public class AnnotationViewModel
         {
             var scaleX = OriginalPageWidthPt / bitmapWidth;
             var scaleY = OriginalPageHeightPt / bitmapHeight;
-            TextX = bitmapX * scaleX;
-            TextY = OriginalPageHeightPt - bitmapY * scaleY;
+            _textX = bitmapX * scaleX;
+            _textY = OriginalPageHeightPt - bitmapY * scaleY;
         }
         else
         {
             // fallback to bitmap space if dimensions are unknown
-            TextX = bitmapX;
-            TextY = bitmapHeight - bitmapY;
+            _textX = bitmapX;
+            _textY = bitmapHeight - bitmapY;
         }
         RefreshPreview();
     }
@@ -207,12 +228,13 @@ public class AnnotationViewModel
             return;
         }
 
-        TextX = SelectedPreset.TextX;
-        TextY = SelectedPreset.TextY;
+        _textX = SelectedPreset.TextX;
+        _textY = SelectedPreset.TextY;
         FontSize = SelectedPreset.FontSize;
         Angle = SelectedPreset.Angle;
         ColorHex = SelectedPreset.ColorHex;
         FontName = SelectedPreset.FontName;
+        RefreshPreview();
     }
 
     private async Task SaveAnnotatedAsync()
@@ -285,12 +307,13 @@ public class AnnotationViewModel
             return;
         }
 
-        TextX = SelectedPreset.TextX;
-        TextY = SelectedPreset.TextY;
+        _textX = SelectedPreset.TextX;
+        _textY = SelectedPreset.TextY;
         FontSize = SelectedPreset.FontSize;
         Angle = SelectedPreset.Angle;
         ColorHex = SelectedPreset.ColorHex;
         FontName = SelectedPreset.FontName;
+        RefreshPreview();
     }
 
     public async Task LoadPresetFromFileAsync(string path)

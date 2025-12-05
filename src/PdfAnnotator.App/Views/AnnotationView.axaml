@@ -71,6 +71,16 @@
                                     <NumericUpDown Width="120" Minimum="0" Maximum="360" Value="{Binding Angle}"/>
                                 </StackPanel>
                             </WrapPanel>
+                            <WrapPanel ItemSpacing="12">
+                                <StackPanel Spacing="4">
+                                    <TextBlock Text="Координата X"/>
+                                    <TextBlock Text="{Binding TextX, StringFormat=N2}"/>
+                                </StackPanel>
+                                <StackPanel Spacing="4">
+                                    <TextBlock Text="Координата Y"/>
+                                    <TextBlock Text="{Binding TextY, StringFormat=N2}"/>
+                                </StackPanel>
+                            </WrapPanel>
                             <StackPanel Spacing="4">
                                 <TextBlock Text="Шрифт"/>
                                 <ComboBox Width="200" ItemsSource="{Binding Fonts}" SelectedItem="{Binding FontName}"/>

@@ -8,7 +8,7 @@ public class TextDirectionTests
     [Fact]
     public async Task ExtractionPresetShouldPersistTextDirection()
     {
-        var service = new PresetService();
+        var service = new PresetService<ExtractionPreset>("presets/extraction");
         var preset = new ExtractionPreset
         {
             Name = "DirectionTest",
@@ -19,8 +19,8 @@ public class TextDirectionTests
             Direction = TextDirection.RightToLeftTopToBottom
         };
 
-        await service.SaveExtractionPresetAsync(preset);
-        var loaded = await service.LoadAllExtractionPresetsAsync();
+        await service.SavePresetAsync(preset);
+        var loaded = await service.LoadAllPresetsAsync();
         var found = loaded.FirstOrDefault(p => p.Name == "DirectionTest");
         
         Assert.NotNull(found);
@@ -34,7 +34,7 @@ public class TextDirectionTests
     [InlineData(TextDirection.RightToLeftBottomToTop)]
     public async Task AllTextDirectionsShouldSerializeCorrectly(TextDirection direction)
     {
-        var service = new PresetService();
+        var service = new PresetService<ExtractionPreset>("presets/extraction");
         var preset = new ExtractionPreset
         {
             Name = $"Direction_{direction}",
@@ -45,8 +45,8 @@ public class TextDirectionTests
             Direction = direction
         };
 
-        await service.SaveExtractionPresetAsync(preset);
-        var loaded = await service.LoadAllExtractionPresetsAsync();
+        await service.SavePresetAsync(preset);
+        var loaded = await service.LoadAllPresetsAsync();
         var found = loaded.FirstOrDefault(p => p.Name == preset.Name);
         
         Assert.NotNull(found);
@@ -69,8 +69,8 @@ public class TextDirectionTests
 }";
         await File.WriteAllTextAsync(presetPath, json);
 
-        var service = new PresetService();
-        var loaded = await service.LoadExtractionPresetAsync(presetPath);
+        var service = new PresetService<ExtractionPreset>("presets/extraction");
+        var loaded = await service.LoadPresetAsync(presetPath);
         
         Assert.NotNull(loaded);
         Assert.Equal(TextDirection.LeftToRightTopToBottom, loaded.Direction);

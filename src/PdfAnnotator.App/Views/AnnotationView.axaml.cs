@@ -76,4 +76,36 @@ public partial class AnnotationView : PdfPageViewBase
         Vm.PdfPath = path;
         await Vm.LoadPdfAsync();
     }
+
+    private async void OnLoadPresetClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (Vm == null)
+        {
+            return;
+        }
+
+        var top = TopLevel.GetTopLevel(this);
+        if (top == null)
+        {
+            return;
+        }
+
+        var files = await top.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            AllowMultiple = false,
+            FileTypeFilter = new List<FilePickerFileType>
+            {
+                new("Preset") { Patterns = new[] { "*.json" } },
+                FilePickerFileTypes.All
+            }
+        });
+
+        var path = files?.FirstOrDefault()?.Path.LocalPath;
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return;
+        }
+
+        await Vm.LoadPresetFromFileAsync(path);
+    }
 }

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.IO;
@@ -15,7 +16,7 @@ namespace PdfAnnotator.App.ViewModels;
 public class AnnotationViewModel
 {
     private readonly IPdfService _pdfService;
-    private readonly IPresetService _presetService;
+    private readonly IPresetService<AnnotationPreset> _presetService;
     private readonly ILogger<AnnotationViewModel> _logger;
 
     public string PdfPath { get; set; } = string.Empty;
@@ -41,10 +42,11 @@ public class AnnotationViewModel
     public AnnotationPreset? SelectedPreset
     {
         get => _selectedPreset;
-        set { _selectedPreset = value; ApplyPreset(); }
+        set { _selectedPreset = value; SelectedPresetName = _selectedPreset?.Name; PresetName = _selectedPreset?.Name ?? string.Empty; ApplyPreset(); }
     }
 
     public string? SelectedPresetName { get; set; }
+    public string PresetName { get; set; } = string.Empty;
     public double TextX { get; set; }
     public double TextY { get; set; }
     public double PreviewX { get; set; }
@@ -74,10 +76,13 @@ public class AnnotationViewModel
 
     public ICommand LoadPdfCommand { get; }
     public ICommand SavePresetCommand { get; }
+    public ICommand LoadPresetCommand { get; }
     public ICommand ReloadPresetsCommand { get; }
+    public ICommand DeletePresetCommand { get; }
+    public ICommand RenamePresetCommand { get; }
     public ICommand SaveAnnotatedPdfCommand { get; }
 
-    public AnnotationViewModel(IPdfService pdfService, IPresetService presetService, ILogger<AnnotationViewModel> logger)
+    public AnnotationViewModel(IPdfService pdfService, IPresetService<AnnotationPreset> presetService, ILogger<AnnotationViewModel> logger)
     {
         _pdfService = pdfService;
         _presetService = presetService;
@@ -85,7 +90,10 @@ public class AnnotationViewModel
 
         LoadPdfCommand = new RelayCommand(async _ => await LoadPdfAsync());
         SavePresetCommand = new RelayCommand(async _ => await SavePresetAsync());
+        LoadPresetCommand = new RelayCommand(async _ => await ApplyPresetCommand());
         ReloadPresetsCommand = new RelayCommand(async _ => await LoadPresetsAsync());
+        DeletePresetCommand = new RelayCommand(async _ => await DeletePresetAsync());
+        RenamePresetCommand = new RelayCommand(async _ => await RenamePresetAsync());
         SaveAnnotatedPdfCommand = new RelayCommand(async _ => await SaveAnnotatedAsync());
     }
 
@@ -157,9 +165,13 @@ public class AnnotationViewModel
 
     private async Task SavePresetAsync()
     {
+        var chosenName = string.IsNullOrWhiteSpace(PresetName)
+            ? SelectedPreset?.Name
+            : PresetName.Trim();
+        
         var preset = new AnnotationPreset
         {
-            Name = SelectedPreset?.Name ?? $"Annot_{DateTime.Now:HHmmss}",
+            Name = string.IsNullOrWhiteSpace(chosenName) ? $"Annot_{DateTime.Now:HHmmss}" : chosenName,
             TextX = TextX,
             TextY = TextY,
             FontSize = FontSize,
@@ -168,7 +180,7 @@ public class AnnotationViewModel
             FontName = FontName
         };
 
-        await _presetService.SaveAnnotationPresetAsync(preset);
+        await _presetService.SavePresetAsync(preset);
         await LoadPresetsAsync();
         SelectedPreset = Presets.FirstOrDefault(p => p.Name == preset.Name);
     }
@@ -176,7 +188,7 @@ public class AnnotationViewModel
     public async Task LoadPresetsAsync()
     {
         Presets.Clear();
-        var presets = await _presetService.LoadAllAnnotationPresetsAsync();
+        var presets = await _presetService.LoadAllPresetsAsync();
         foreach (var preset in presets)
         {
             Presets.Add(preset);
@@ -228,5 +240,76 @@ public class AnnotationViewModel
         SelectedCodePreview = row?.Code ?? string.Empty;
     }
     
+    private async Task DeletePresetAsync()
+    {
+        if (SelectedPreset == null)
+        {
+            return;
+        }
+
+        var nameToDelete = SelectedPreset.Name;
+        await _presetService.DeletePresetAsync(nameToDelete);
+        var existing = Presets.FirstOrDefault(p => p.Name == nameToDelete);
+        if (existing != null)
+        {
+            Presets.Remove(existing);
+        }
+
+        SelectedPreset = null;
+        PresetName = string.Empty;
+    }
+
+    private async Task RenamePresetAsync()
+    {
+        if (SelectedPreset == null)
+        {
+            return;
+        }
+
+        var newName = PresetName?.Trim();
+        if (string.IsNullOrWhiteSpace(newName) || newName == SelectedPreset.Name)
+        {
+            return;
+        }
+
+        await _presetService.RenamePresetAsync(SelectedPreset.Name, newName);
+        SelectedPresetName = newName;
+        await LoadPresetsAsync();
+        SelectedPreset = Presets.FirstOrDefault(p => p.Name == newName);
+    }
+
+    private async Task ApplyPresetCommand()
+    {
+        if (SelectedPreset == null)
+        {
+            return;
+        }
+
+        TextX = SelectedPreset.TextX;
+        TextY = SelectedPreset.TextY;
+        FontSize = SelectedPreset.FontSize;
+        Angle = SelectedPreset.Angle;
+        ColorHex = SelectedPreset.ColorHex;
+        FontName = SelectedPreset.FontName;
+    }
+
+    public async Task LoadPresetFromFileAsync(string path)
+    {
+        var preset = await _presetService.LoadPresetAsync(path);
+        if (preset == null)
+        {
+            _logger.LogWarning("Failed to load annotation preset from {Path}", path);
+            return;
+        }
+
+        var existing = Presets.FirstOrDefault(p => p.Name == preset.Name);
+        if (existing != null)
+        {
+            Presets.Remove(existing);
+        }
+
+        Presets.Add(preset);
+        SelectedPreset = preset;
+    }
 
 }

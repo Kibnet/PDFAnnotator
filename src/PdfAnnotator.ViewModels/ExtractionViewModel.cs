@@ -17,7 +17,7 @@ namespace PdfAnnotator.App.ViewModels;
 public class ExtractionViewModel
 {
     private readonly IPdfService _pdfService;
-    private readonly IPresetService _presetService;
+    private readonly IPresetService<ExtractionPreset> _presetService;
     private readonly ILogger<ExtractionViewModel> _logger;
     private DirectionOption _direction;
     private bool _addSpacesBetweenWords = true;
@@ -137,7 +137,7 @@ public class ExtractionViewModel
     public ICommand DeletePresetCommand { get; }
     public ICommand RenamePresetCommand { get; }
 
-    public ExtractionViewModel(IPdfService pdfService, IPresetService presetService, ILogger<ExtractionViewModel> logger)
+    public ExtractionViewModel(IPdfService pdfService, IPresetService<ExtractionPreset> presetService, ILogger<ExtractionViewModel> logger)
     {
         _pdfService = pdfService;
         _presetService = presetService;
@@ -312,7 +312,7 @@ public class ExtractionViewModel
             Direction = Direction.Value,
             AddSpacesBetweenWords = AddSpacesBetweenWords
         };
-        await _presetService.SaveExtractionPresetAsync(preset);
+        await _presetService.SavePresetAsync(preset);
         await LoadPresetsAsync();
         SelectedPreset = Presets.FirstOrDefault(p => p.Name == preset.Name);
     }
@@ -325,7 +325,7 @@ public class ExtractionViewModel
         }
 
         var nameToDelete = SelectedPreset.Name;
-        await _presetService.DeleteExtractionPresetAsync(nameToDelete);
+        await _presetService.DeletePresetAsync(nameToDelete);
         var existing = Presets.FirstOrDefault(p => p.Name == nameToDelete);
         if (existing != null)
         {
@@ -349,7 +349,7 @@ public class ExtractionViewModel
             return;
         }
 
-        await _presetService.RenameExtractionPresetAsync(SelectedPreset.Name, newName);
+        await _presetService.RenamePresetAsync(SelectedPreset.Name, newName);
         SelectedPresetName = newName;
         await LoadPresetsAsync();
         SelectedPreset = Presets.FirstOrDefault(p => p.Name == newName);
@@ -379,7 +379,7 @@ public class ExtractionViewModel
     public async Task LoadPresetsAsync()
     {
         Presets.Clear();
-        var presets = await _presetService.LoadAllExtractionPresetsAsync();
+        var presets = await _presetService.LoadAllPresetsAsync();
         foreach (var preset in presets)
         {
             Presets.Add(preset);
@@ -393,7 +393,7 @@ public class ExtractionViewModel
 
     public async Task LoadPresetFromFileAsync(string path)
     {
-        var preset = await _presetService.LoadExtractionPresetAsync(path);
+        var preset = await _presetService.LoadPresetAsync(path);
         if (preset == null)
         {
             _logger.LogWarning("Failed to load extraction preset from {Path}", path);

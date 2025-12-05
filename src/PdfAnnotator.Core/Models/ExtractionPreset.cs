@@ -1,6 +1,6 @@
 namespace PdfAnnotator.Core.Models;
 
-public class ExtractionPreset
+public class ExtractionPreset : IPreset
 {
     public string Name { get; set; } = string.Empty;
     public double X0 { get; set; }

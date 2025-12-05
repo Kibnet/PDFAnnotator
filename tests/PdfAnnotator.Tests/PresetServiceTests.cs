@@ -8,7 +8,7 @@ public class PresetServiceTests
     [Fact]
     public async Task ShouldSaveAndLoadExtractionPreset()
     {
-        var service = new PresetService();
+        var service = new PresetService<ExtractionPreset>("presets/extraction");
         var preset = new ExtractionPreset
         {
             Name = "TestExtract",
@@ -18,15 +18,15 @@ public class PresetServiceTests
             Y1 = 4
         };
 
-        await service.SaveExtractionPresetAsync(preset);
-        var all = await service.LoadAllExtractionPresetsAsync();
+        await service.SavePresetAsync(preset);
+        var all = await service.LoadAllPresetsAsync();
         Assert.Contains(all, p => p.Name == "TestExtract");
     }
 
     [Fact]
     public async Task ShouldSaveAndLoadAnnotationPreset()
     {
-        var service = new PresetService();
+        var service = new PresetService<AnnotationPreset>("presets/annotation");
         var preset = new AnnotationPreset
         {
             Name = "TestAnnot",
@@ -38,8 +38,8 @@ public class PresetServiceTests
             FontName = "Helvetica"
         };
 
-        await service.SaveAnnotationPresetAsync(preset);
-        var all = await service.LoadAllAnnotationPresetsAsync();
+        await service.SavePresetAsync(preset);
+        var all = await service.LoadAllPresetsAsync();
         Assert.Contains(all, p => p.Name == "TestAnnot");
     }
 }

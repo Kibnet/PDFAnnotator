@@ -1,6 +1,6 @@
 namespace PdfAnnotator.Core.Models;
 
-public class AnnotationPreset
+public class AnnotationPreset : IPreset
 {
     public string Name { get; set; } = string.Empty;
     public double TextX { get; set; }

@@ -22,7 +22,6 @@ public enum AppMode
 public class MainWindowViewModel
 {
     private readonly ICsvService _csvService;
-    private readonly IPresetService _presetService;
     private readonly IProjectService _projectService;
     private readonly ILogger<MainWindowViewModel> _logger;
 
@@ -48,7 +47,6 @@ public class MainWindowViewModel
 
     public MainWindowViewModel(
         ICsvService csvService,
-        IPresetService presetService,
         IProjectService projectService,
         ExtractionViewModel extraction,
         TableViewModel table,
@@ -56,7 +54,6 @@ public class MainWindowViewModel
         ILogger<MainWindowViewModel> logger)
     {
         _csvService = csvService;
-        _presetService = presetService;
         _projectService = projectService;
         Extraction = extraction;
         Table = table;

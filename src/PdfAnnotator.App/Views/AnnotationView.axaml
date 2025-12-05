@@ -1,4 +1,4 @@
-﻿<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:viewmodels="using:PdfAnnotator.App.ViewModels"
              x:Class="PdfAnnotator.App.Views.AnnotationView"
@@ -42,9 +42,14 @@
                                 </ComboBox>
                                 <Button Content="Обновить" Command="{Binding ReloadPresetsCommand}"/>
                             </WrapPanel>
+                            <TextBox Watermark="Имя пресета"
+                                     Text="{Binding PresetName, UpdateSourceTrigger=PropertyChanged}"
+                                     HorizontalAlignment="Stretch"/>
                             <WrapPanel ItemSpacing="8">
-                                <Button Content="Сохранить пресет" Command="{Binding SavePresetCommand}"/>
-                                <Button Content="Сохранить итоговый PDF" Command="{Binding SaveAnnotatedPdfCommand}"/>
+                                <Button Content="Сохранить" Command="{Binding SavePresetCommand}"/>
+                                <Button Content="Загрузить" Command="{Binding LoadPresetCommand}"/>
+                                <Button Content="Переименовать" Command="{Binding RenamePresetCommand}"/>
+                                <Button Content="Удалить" Command="{Binding DeletePresetCommand}"/>
                             </WrapPanel>
                         </StackPanel>
                     </Border>
@@ -70,6 +75,13 @@
                                 <TextBlock Text="Шрифт"/>
                                 <ComboBox Width="200" ItemsSource="{Binding Fonts}" SelectedItem="{Binding FontName}"/>
                             </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Padding="8" Background="#08000000" CornerRadius="4">
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="Сохранение результата" FontWeight="SemiBold"/>
+                            <Button Content="Сохранить итоговый PDF" Command="{Binding SaveAnnotatedPdfCommand}" HorizontalAlignment="Stretch"/>
                         </StackPanel>
                     </Border>
                 </StackPanel>

@@ -15,7 +15,7 @@ public class ExtractionViewModelTests
     {
         // Arrange
         var pdfServiceMock = new Mock<IPdfService>();
-        var presetServiceMock = new Mock<IPresetService>();
+        var presetServiceMock = new Mock<IPresetService<ExtractionPreset>>();
         var loggerMock = new Mock<ILogger<ExtractionViewModel>>();
         
         var viewModel = new ExtractionViewModel(
@@ -47,7 +47,7 @@ public class ExtractionViewModelTests
     {
         // Arrange
         var pdfServiceMock = new Mock<IPdfService>();
-        var presetServiceMock = new Mock<IPresetService>();
+        var presetServiceMock = new Mock<IPresetService<ExtractionPreset>>();
         var loggerMock = new Mock<ILogger<ExtractionViewModel>>();
         
         // Mock the extraction service to return some test data

@@ -99,7 +99,6 @@
                         <StackPanel Spacing="6">
                             <TextBlock Text="Предпросмотр текста" FontWeight="SemiBold"/>
                             <TextBox Text="{Binding ExtractedTextPreview}"
-                                     MinHeight="120"
                                      MaxHeight="220"
                                      IsReadOnly="True"
                                      TextWrapping="Wrap"

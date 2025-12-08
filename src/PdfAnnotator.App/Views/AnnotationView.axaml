@@ -17,13 +17,19 @@
                                      Text="{Binding PdfPath, UpdateSourceTrigger=PropertyChanged}"
                                      HorizontalAlignment="Stretch"/>
                             <WrapPanel ItemSpacing="8" VerticalAlignment="Center">
-                                <Button Content="Сменить PDF" Click="OnOpenPdfClick" Command="{Binding LoadPdfCommand}"/>
+                                <Button Content="Открыть PDF" Click="OnOpenPdfClick" Command="{Binding LoadPdfCommand}"/>
                                 <TextBlock Text="{Binding PageCount, StringFormat='Страниц: {0}'}"
                                            VerticalAlignment="Center"/>
                                 <NumericUpDown Minimum="1" FormatString="N0"
                                                Maximum="{Binding PageCount}"
                                                Value="{Binding CurrentPage}"/>
                             </WrapPanel>
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="Текст для вставки"/>
+                                <TextBox AcceptsReturn="True"
+                                         TextWrapping="Wrap"
+                                         Text="{Binding InsertText, UpdateSourceTrigger=PropertyChanged}"/>
+                            </StackPanel>
                         </StackPanel>
                     </Border>
 
@@ -96,13 +102,8 @@
                             </WrapPanel>
                         </StackPanel>
                     </Border>
-
-                    <Border Padding="8" Background="#08000000" CornerRadius="4">
-                        <StackPanel Spacing="8">
-                            <TextBlock Text="Сохранение результата" FontWeight="SemiBold"/>
-                            <Button Content="Сохранить итоговый PDF" Command="{Binding SaveAnnotatedPdfCommand}" HorizontalAlignment="Stretch"/>
-                        </StackPanel>
-                    </Border>
+                    
+                    <Button Content="Сохранить итоговый PDF" Background="ForestGreen"  Command="{Binding SaveAnnotatedPdfCommand}" HorizontalAlignment="Stretch"/>
                 </StackPanel>
             </ScrollViewer>
         </Border>

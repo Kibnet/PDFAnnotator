@@ -19,6 +19,7 @@ public class AnnotationViewModel
     private readonly IPdfService _pdfService;
     private readonly IPresetService<AnnotationPreset> _presetService;
     private readonly ILogger<AnnotationViewModel> _logger;
+    private const string DefaultInsertText = "Тестовый текст";
 
     public string PdfPath { get; set; } = string.Empty;
     public int PageCount { get; set; }
@@ -79,6 +80,8 @@ public class AnnotationViewModel
     private string _colorHex = "#000000";
     private Color _selectedColor = Colors.Black;
     private bool _isSyncingColor;
+    private string _insertText = DefaultInsertText;
+    private bool _isSyncingInsertText;
 
     public string ColorHex
     {
@@ -122,6 +125,28 @@ public class AnnotationViewModel
         }
     }
 
+    public string InsertText
+    {
+        get => _insertText;
+        set
+        {
+            var normalized = value ?? string.Empty;
+            if (_insertText == normalized)
+            {
+                return;
+            }
+
+            _insertText = normalized;
+
+            if (!_isSyncingInsertText)
+            {
+                SyncInsertTextToRow();
+            }
+
+            SelectedCodePreview = _insertText;
+        }
+    }
+
     public string FontName { get; set; } = "Helvetica";
     public double OriginalPageWidthPt { get; set; }
     public double OriginalPageHeightPt { get; set; }
@@ -129,7 +154,7 @@ public class AnnotationViewModel
     public ObservableCollection<string> Fonts { get; } = new(new[] { "Helvetica", "Arial", "Times New Roman" });
 
     public ObservableCollection<TableRow> Rows { get; } = new();
-    public string SelectedCodePreview { get; set; } = string.Empty;
+    public string SelectedCodePreview { get; set; } = DefaultInsertText;
 
     public void ApplyPageSnapshot(PageSnapshot snapshot)
     {
@@ -306,7 +331,13 @@ public class AnnotationViewModel
     private void RefreshPreview()
     {
         var row = Rows.FirstOrDefault(r => r.Page == CurrentPage);
-        SelectedCodePreview = row?.Code ?? string.Empty;
+        var text = !string.IsNullOrWhiteSpace(row?.Code) ? row!.Code : DefaultInsertText;
+
+        _isSyncingInsertText = true;
+        InsertText = text;
+        _isSyncingInsertText = false;
+
+        SelectedCodePreview = InsertText;
     }
     
     private async Task DeletePresetAsync()
@@ -380,6 +411,15 @@ public class AnnotationViewModel
 
         Presets.Add(preset);
         SelectedPreset = preset;
+    }
+
+    private void SyncInsertTextToRow()
+    {
+        var row = Rows.FirstOrDefault(r => r.Page == CurrentPage);
+        if (row != null)
+        {
+            row.Code = _insertText;
+        }
     }
 
     private static bool TryParseColor(string? value, out Color color)

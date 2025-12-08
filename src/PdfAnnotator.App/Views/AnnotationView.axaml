@@ -103,7 +103,7 @@
                         </StackPanel>
                     </Border>
                     
-                    <Button Content="Сохранить итоговый PDF" Background="ForestGreen"  Command="{Binding SaveAnnotatedPdfCommand}" HorizontalAlignment="Stretch"/>
+                    <Button Content="Сохранить итоговый PDF" Background="ForestGreen" Click="OnSaveAnnotatedPdfClick" HorizontalAlignment="Stretch"/>
                 </StackPanel>
             </ScrollViewer>
         </Border>

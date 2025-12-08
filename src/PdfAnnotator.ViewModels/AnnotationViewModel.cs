@@ -173,7 +173,7 @@ public class AnnotationViewModel
     public ICommand ReloadPresetsCommand { get; }
     public ICommand DeletePresetCommand { get; }
     public ICommand RenamePresetCommand { get; }
-    public ICommand SaveAnnotatedPdfCommand { get; }
+    // SaveAnnotatedPdfCommand removed since we're handling save in the view
 
     public AnnotationViewModel(IPdfService pdfService, IPresetService<AnnotationPreset> presetService, ILogger<AnnotationViewModel> logger)
     {
@@ -187,7 +187,7 @@ public class AnnotationViewModel
         ReloadPresetsCommand = new RelayCommand(async _ => await LoadPresetsAsync());
         DeletePresetCommand = new RelayCommand(async _ => await DeletePresetAsync());
         RenamePresetCommand = new RelayCommand(async _ => await RenamePresetAsync());
-        SaveAnnotatedPdfCommand = new RelayCommand(async _ => await SaveAnnotatedAsync());
+        // SaveAnnotatedPdfCommand initialization removed
     }
 
     public void SetRows(IEnumerable<TableRow> rows)
@@ -309,7 +309,8 @@ public class AnnotationViewModel
         RefreshPreview();
     }
 
-    private async Task SaveAnnotatedAsync()
+    // New method that will be called from the view after getting the save path from user
+    public async Task SaveAnnotatedPdfAsync(string outputPath)
     {
         var preset = new AnnotationPreset
         {
@@ -322,10 +323,14 @@ public class AnnotationViewModel
             FontName = FontName
         };
 
-        var output = "output/annotated.pdf";
-        Directory.CreateDirectory(Path.GetDirectoryName(output)!);
-        await _pdfService.GenerateAnnotatedPdfAsync(PdfPath, output, Rows.ToList(), preset);
-        _logger.LogInformation("Annotated PDF saved at {Path}", output);
+        var directory = Path.GetDirectoryName(outputPath);
+        if (!string.IsNullOrWhiteSpace(directory))
+        {
+            Directory.CreateDirectory(directory);
+        }
+        
+        await _pdfService.GenerateAnnotatedPdfAsync(PdfPath, outputPath, Rows.ToList(), preset);
+        _logger.LogInformation("Annotated PDF saved at {Path}", outputPath);
     }
 
     private void RefreshPreview()

@@ -108,4 +108,37 @@ public partial class AnnotationView : PdfPageViewBase
 
         await Vm.LoadPresetFromFileAsync(path);
     }
+
+    private async void OnSaveAnnotatedPdfClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (Vm == null)
+        {
+            return;
+        }
+
+        var top = TopLevel.GetTopLevel(this);
+        if (top == null)
+        {
+            return;
+        }
+
+        var file = await top.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+        {
+            SuggestedFileName = "annotated.pdf",
+            DefaultExtension = "pdf",
+            FileTypeChoices = new List<FilePickerFileType>
+            {
+                new("PDF") { Patterns = new[] { "*.pdf" } },
+                FilePickerFileTypes.All
+            }
+        });
+
+        var path = file?.Path.LocalPath;
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return;
+        }
+
+        await Vm.SaveAnnotatedPdfAsync(path);
+    }
 }

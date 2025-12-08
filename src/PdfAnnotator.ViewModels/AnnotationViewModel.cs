@@ -4,6 +4,7 @@ using System.Linq;
 using System.IO;
 using System.Threading.Tasks;
 using System.Windows.Input;
+using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Microsoft.Extensions.Logging;
 using PdfAnnotator.Core.Models;
@@ -74,7 +75,53 @@ public class AnnotationViewModel
     public double PreviewY { get; set; }
     public double FontSize { get; set; } = 12;
     public double Angle { get; set; }
-    public string ColorHex { get; set; } = "#000000";
+    
+    private string _colorHex = "#000000";
+    private Color _selectedColor = Colors.Black;
+    private bool _isSyncingColor;
+
+    public string ColorHex
+    {
+        get => _colorHex;
+        set
+        {
+            if (_colorHex == value)
+            {
+                return;
+            }
+
+            _colorHex = value;
+
+            if (!_isSyncingColor && TryParseColor(value, out var parsed))
+            {
+                _isSyncingColor = true;
+                SelectedColor = parsed;
+                _isSyncingColor = false;
+            }
+        }
+    }
+
+    public Color SelectedColor
+    {
+        get => _selectedColor;
+        set
+        {
+            if (_selectedColor == value)
+            {
+                return;
+            }
+
+            _selectedColor = value;
+
+            if (!_isSyncingColor)
+            {
+                _isSyncingColor = true;
+                ColorHex = $"#{value.A:X2}{value.R:X2}{value.G:X2}{value.B:X2}";
+                _isSyncingColor = false;
+            }
+        }
+    }
+
     public string FontName { get; set; } = "Helvetica";
     public double OriginalPageWidthPt { get; set; }
     public double OriginalPageHeightPt { get; set; }
@@ -333,6 +380,23 @@ public class AnnotationViewModel
 
         Presets.Add(preset);
         SelectedPreset = preset;
+    }
+
+    private static bool TryParseColor(string? value, out Color color)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            color = default;
+            return false;
+        }
+
+        if (Color.TryParse(value, out color))
+        {
+            return true;
+        }
+
+        var normalized = value.StartsWith("#", StringComparison.Ordinal) ? value : $"#{value}";
+        return Color.TryParse(normalized, out color);
     }
 
 }

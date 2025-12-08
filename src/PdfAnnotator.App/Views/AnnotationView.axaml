@@ -64,7 +64,16 @@
                                 </StackPanel>
                                 <StackPanel Spacing="4">
                                     <TextBlock Text="Цвет"/>
-                                    <TextBox Width="120" Text="{Binding ColorHex}"/>
+                                    <WrapPanel ItemSpacing="8" VerticalAlignment="Center">
+                                        <TextBox Width="120" Text="{Binding ColorHex, UpdateSourceTrigger=PropertyChanged}"/>
+                                        <ColorPicker Width="64" Height="30" Color="{Binding SelectedColor}">
+                                            <ColorPicker.Content>
+                                                <Border HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="{Binding ColorHex}"/>
+                                            </ColorPicker.Content>
+                                        </ColorPicker>
+                                        
+                                    </WrapPanel>
+                                    
                                 </StackPanel>
                                 <StackPanel Spacing="4">
                                     <TextBlock Text="Угол"/>
@@ -112,6 +121,7 @@
                                    Canvas.Left="{Binding PreviewX}"
                                    Canvas.Top="{Binding PreviewY}"
                                    FontSize="{Binding FontSize}"
+                                   Foreground="{Binding ColorHex}"
                                    RenderTransformOrigin="0,0">
                             <TextBlock.RenderTransform>
                                 <RotateTransform Angle="{Binding Angle}"/>

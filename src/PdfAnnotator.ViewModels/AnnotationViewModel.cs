@@ -206,6 +206,7 @@ public class AnnotationViewModel
     public ICommand ReloadPresetsCommand { get; }
     public ICommand DeletePresetCommand { get; }
     public ICommand RenamePresetCommand { get; }
+    public ICommand RenderPageCommand { get; }
     // SaveAnnotatedPdfCommand removed since we're handling save in the view
 
     public AnnotationViewModel(IPdfService pdfService, IPresetService<AnnotationPreset> presetService, ILogger<AnnotationViewModel> logger)
@@ -220,6 +221,7 @@ public class AnnotationViewModel
         ReloadPresetsCommand = new RelayCommand(async _ => await LoadPresetsAsync());
         DeletePresetCommand = new RelayCommand(async _ => await DeletePresetAsync());
         RenamePresetCommand = new RelayCommand(async _ => await RenamePresetAsync());
+        RenderPageCommand = new RelayCommand(async _ => await RenderCurrentPageAsync());
         // SaveAnnotatedPdfCommand initialization removed
     }
 
@@ -517,4 +519,51 @@ public class AnnotationViewModel
         return Color.TryParse(normalized, out color);
     }
 
+    private async Task RenderCurrentPageAsync()
+    {
+        await RenderAnnotatedPageAsync();
+    }
+
+    /// <summary>
+    /// Renders the current page with annotations applied and updates the preview
+    /// </summary>
+    private async Task RenderAnnotatedPageAsync()
+    {
+        if (string.IsNullOrWhiteSpace(PdfPath) || !File.Exists(PdfPath))
+        {
+            return;
+        }
+
+        try
+        {
+            // Get the current preset
+            var preset = new AnnotationPreset
+            {
+                Name = SelectedPreset?.Name ?? "Current",
+                TextX = TextX,
+                TextY = TextY,
+                FontSize = FontSize,
+                Angle = Angle,
+                ColorHex = ColorHex,
+                FontName = FontName
+            };
+
+            // Get the current row for this page
+            var currentRow = Rows.FirstOrDefault(r => r.Page == CurrentPage);
+
+            // Render the annotated page directly
+            var annotatedBitmap = await _pdfService.RenderAnnotatedPageAsync(PdfPath, CurrentPage, currentRow, preset, PageRenderService.RenderDpi);
+            
+            if (annotatedBitmap != null)
+            {
+                // Update the bitmap with the annotated version
+                PageBitmap = annotatedBitmap;
+                RefreshPreview();
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to render annotated page");
+        }
+    }
 }

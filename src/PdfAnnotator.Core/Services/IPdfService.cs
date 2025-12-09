@@ -13,4 +13,5 @@ public interface IPdfService
     Task<List<TableRow>> ExtractTextAsync(string pdfPath, ExtractionPreset preset);
     Task<string> ExtractTextFromPageAsync(string pdfPath, int pageNumber, ExtractionPreset preset);
     Task GenerateAnnotatedPdfAsync(string pdfPath, string outputPdfPath, List<TableRow> rows, AnnotationPreset preset);
+    Task<Bitmap> RenderAnnotatedPageAsync(string pdfPath, int page, TableRow? row, AnnotationPreset preset, int dpi = 100);
 }

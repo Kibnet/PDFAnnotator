@@ -175,6 +175,61 @@ public class PdfService : IPdfService
         });
     }
 
+    public Task<Bitmap> RenderAnnotatedPageAsync(string pdfPath, int page, TableRow? row, AnnotationPreset preset, int dpi = 100)
+    {
+        return Task.Run(() =>
+        {
+            // Create a temporary file for the annotated page
+            var tempPath = Path.GetTempFileName();
+            try
+            {
+                using var document = PdfReader.Open(pdfPath, PdfDocumentOpenMode.Modify);
+                
+                // Check if the page number is valid
+                if (page < 1 || page > document.PageCount)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(page), $"Page {page} is out of range. Document has {document.PageCount} pages.");
+                }
+                
+                // Work with just the specified page
+                var pageIndex = page - 1; // Convert to 0-based index
+                var pdfPage = document.Pages[pageIndex];
+                using var gfx = XGraphics.FromPdfPage(pdfPage);
+
+                // Apply annotation if we have a row with text
+                if (row != null && !string.IsNullOrWhiteSpace(row.Code))
+                {
+                    var color = XColor.FromArgb(ParseColor(preset.ColorHex));
+                    var font = new XFont(preset.FontName, preset.FontSize);
+                    gfx.TranslateTransform(preset.TextX, pdfPage.Height - preset.TextY);
+                    if (Math.Abs(preset.Angle) > 0.01)
+                    {
+                        gfx.RotateAtTransform(preset.Angle, new XPoint(0, 0));
+                    }
+                    gfx.DrawString(row.Code, font, new XSolidBrush(color), new XPoint(0, 0));
+                }
+
+                // Save the modified document to temporary file
+                document.Save(tempPath);
+
+                // Render the annotated page
+                return RenderPageAsync(tempPath, 1, dpi).Result;
+            }
+            finally
+            {
+                // Clean up temporary file
+                try
+                {
+                    File.Delete(tempPath);
+                }
+                catch
+                {
+                    // Ignore cleanup errors
+                }
+            }
+        });
+    }
+
     private static bool IsInside(Word word, ExtractionPreset preset)
     {
         var rect = word.BoundingBox;

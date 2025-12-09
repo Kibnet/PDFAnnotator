@@ -66,7 +66,7 @@
                             <WrapPanel ItemSpacing="12">
                                 <StackPanel Spacing="4">
                                     <TextBlock Text="Размер шрифта"/>
-                                    <NumericUpDown Width="120" Minimum="6" Maximum="72" Value="{Binding FontSize}"/>
+                                    <NumericUpDown Width="120" Minimum="6" Maximum="200" Value="{Binding FontSize}"/>
                                 </StackPanel>
                                 <StackPanel Spacing="4">
                                     <TextBlock Text="Цвет"/>
@@ -83,7 +83,7 @@
                                 </StackPanel>
                                 <StackPanel Spacing="4">
                                     <TextBlock Text="Угол"/>
-                                    <NumericUpDown Width="120" Minimum="0" Maximum="360" Value="{Binding Angle}"/>
+                                    <NumericUpDown Width="120" Minimum="-360" Maximum="360" Value="{Binding Angle}"/>
                                 </StackPanel>
                                 <StackPanel Spacing="4">
                                     <TextBlock Text="Шрифт"/>

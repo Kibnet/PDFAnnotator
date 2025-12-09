@@ -170,7 +170,7 @@ public class AnnotationViewModel
         }
     }
 
-    private string _fontName = "Helvetica";
+    private string _fontName = "Arial";
     public string FontName
     {
         get => _fontName;
@@ -183,7 +183,7 @@ public class AnnotationViewModel
     public double OriginalPageWidthPt { get; set; }
     public double OriginalPageHeightPt { get; set; }
 
-    public ObservableCollection<string> Fonts { get; } = new(new[] { "Helvetica", "Arial", "Times New Roman" });
+    public ObservableCollection<string> Fonts { get; } = new(new[] { "Arial", "Helvetica", "Times New Roman" });
 
     public ObservableCollection<TableRow> Rows { get; } = new();
     public string SelectedCodePreview { get; set; } = DefaultInsertText;

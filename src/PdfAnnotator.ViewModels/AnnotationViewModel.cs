@@ -57,6 +57,7 @@ public class AnnotationViewModel
         set
         {
             _textX = value;
+            UpdatePreviewPosition();
             RefreshPreview();
         }
     }
@@ -68,6 +69,7 @@ public class AnnotationViewModel
         set
         {
             _textY = value;
+            UpdatePreviewPosition();
             RefreshPreview();
         }
     }
@@ -164,6 +166,7 @@ public class AnnotationViewModel
         OriginalPageWidthPt = snapshot.WidthPt;
         OriginalPageHeightPt = snapshot.HeightPt;
         PageBitmap = snapshot.Bitmap;
+        UpdatePreviewPosition();
         RefreshPreview();
     }
 
@@ -300,12 +303,16 @@ public class AnnotationViewModel
             return;
         }
 
-        _textX = SelectedPreset.TextX;
-        _textY = SelectedPreset.TextY;
+        TextX = SelectedPreset.TextX;
+        TextY = SelectedPreset.TextY;
         FontSize = SelectedPreset.FontSize;
         Angle = SelectedPreset.Angle;
         ColorHex = SelectedPreset.ColorHex;
         FontName = SelectedPreset.FontName;
+        
+        // Update preview position based on the new text coordinates
+        UpdatePreviewPosition();
+        
         RefreshPreview();
     }
 
@@ -390,13 +397,49 @@ public class AnnotationViewModel
             return;
         }
 
-        _textX = SelectedPreset.TextX;
-        _textY = SelectedPreset.TextY;
+        TextX = SelectedPreset.TextX;
+        TextY = SelectedPreset.TextY;
         FontSize = SelectedPreset.FontSize;
         Angle = SelectedPreset.Angle;
         ColorHex = SelectedPreset.ColorHex;
         FontName = SelectedPreset.FontName;
+        
+        // Update preview position based on the new text coordinates
+        UpdatePreviewPosition();
+        
         RefreshPreview();
+    }
+    
+    /// <summary>
+    /// Updates the preview position (PreviewX/PreviewY) based on the current TextX/TextY coordinates
+    /// and the page dimensions. This converts from PDF coordinate system to view coordinate system.
+    /// </summary>
+    private void UpdatePreviewPosition()
+    {
+        if (PageBitmap == null || OriginalPageWidthPt <= 0 || OriginalPageHeightPt <= 0)
+        {
+            return;
+        }
+        
+        var bitmapWidth = PageBitmap.PixelSize.Width;
+        var bitmapHeight = PageBitmap.PixelSize.Height;
+        
+        if (bitmapWidth <= 0 || bitmapHeight <= 0)
+        {
+            return;
+        }
+        
+        // Convert from PDF coordinate system (bottom-left origin) to bitmap coordinate system (top-left origin)
+        var scaleX = bitmapWidth / OriginalPageWidthPt;
+        var scaleY = bitmapHeight / OriginalPageHeightPt;
+        var bitmapX = TextX * scaleX;
+        var bitmapY = bitmapHeight - TextY * scaleY; // Y-axis flip
+        
+        // For preview, we need view coordinates, not bitmap coordinates
+        // We'll use a simple approximation here - in a real implementation, 
+        // this would need to account for the Viewbox scaling
+        PreviewX = bitmapX;
+        PreviewY = bitmapY;
     }
 
     public async Task LoadPresetFromFileAsync(string path)

@@ -117,21 +117,6 @@
                            Source="{Binding PageBitmap}"
                            Stretch="Uniform"
                            PointerPressed="OnPointerPressed"/>
-                    <Canvas IsHitTestVisible="False"
-                            Width="{Binding #AnnotImage.Bounds.Width}"
-                            Height="{Binding #AnnotImage.Bounds.Height}">
-                        <TextBlock Text="{Binding SelectedCodePreview}"
-                                   Canvas.Left="{Binding PreviewX}"
-                                   Canvas.Top="{Binding PreviewY}"
-                                   FontSize="{Binding FontSize}"
-                                   FontFamily="{Binding FontName}"
-                                   Foreground="{Binding ColorHex}"
-                                   RenderTransformOrigin="0,0">
-                            <TextBlock.RenderTransform>
-                                <RotateTransform Angle="{Binding Angle}"/>
-                            </TextBlock.RenderTransform>
-                        </TextBlock>
-                    </Canvas>
                 </Grid>
             </Viewbox>
         </Border>

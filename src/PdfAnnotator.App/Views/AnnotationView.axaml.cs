@@ -29,7 +29,7 @@ public partial class AnnotationView : PdfPageViewBase
 
     private AnnotationViewModel? Vm => DataContext as AnnotationViewModel;
 
-    private void OnPointerPressed(object? sender, PointerPressedEventArgs e)
+    private async void OnPointerPressed(object? sender, PointerPressedEventArgs e)
     {
         var image = Image;
         if (Vm == null || image?.Source is not Bitmap bmp)
@@ -41,7 +41,7 @@ public partial class AnnotationView : PdfPageViewBase
         var scaled = ToBitmapSpace(pos);
         var bitmapWidth = bmp.PixelSize.Width;
         var bitmapHeight = bmp.PixelSize.Height;
-        Vm.UpdatePosition(pos.X, pos.Y, scaled.X, scaled.Y, bitmapWidth, bitmapHeight);
+        var positionChanged = Vm.UpdatePosition(pos.X, pos.Y, scaled.X, scaled.Y, bitmapWidth, bitmapHeight);
     }
 
     private async void OnOpenPdfClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
@@ -122,9 +122,10 @@ public partial class AnnotationView : PdfPageViewBase
             return;
         }
 
+        var newName = new FileInfo(Vm.PdfPath).Name.Replace(".pdf","") + "_annotated.pdf";
         var file = await top.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
         {
-            SuggestedFileName = "annotated.pdf",
+            SuggestedFileName = newName,
             DefaultExtension = "pdf",
             FileTypeChoices = new List<FilePickerFileType>
             {

@@ -23,6 +23,7 @@ public class AnnotationViewModel
     private readonly IPresetService<AnnotationPreset> _presetService;
     private readonly ILogger<AnnotationViewModel> _logger;
     private const string DefaultInsertText = "Тестовый текст";
+    private const double PositionEpsilon = 0.01;
 
     public string PdfPath { get; set; } = string.Empty;
     public int PageCount { get; set; }
@@ -105,6 +106,8 @@ public class AnnotationViewModel
     private bool _isSyncingColor;
     private string _insertText = DefaultInsertText;
     private bool _isSyncingInsertText;
+    private bool _isRendering;
+    private bool _renderRequested;
 
     public string ColorHex
     {
@@ -235,26 +238,38 @@ public class AnnotationViewModel
         RefreshPreview();
     }
 
-    public void UpdatePosition(double viewX, double viewY, double bitmapX, double bitmapY, double bitmapWidth, double bitmapHeight)
+    public bool UpdatePosition(double viewX, double viewY, double bitmapX, double bitmapY, double bitmapWidth, double bitmapHeight)
     {
         // preview in view coordinates for correct overlay positioning
         PreviewX = viewX;
         PreviewY = viewY;
 
+        double newTextX;
+        double newTextY;
+
         if (OriginalPageWidthPt > 0 && OriginalPageHeightPt > 0 && bitmapWidth > 0 && bitmapHeight > 0)
         {
             var scaleX = OriginalPageWidthPt / bitmapWidth;
             var scaleY = OriginalPageHeightPt / bitmapHeight;
-            _textX = bitmapX * scaleX;
-            _textY = OriginalPageHeightPt - bitmapY * scaleY;
+            newTextX = bitmapX * scaleX;
+            newTextY = OriginalPageHeightPt - bitmapY * scaleY;
         }
         else
         {
             // fallback to bitmap space if dimensions are unknown
-            _textX = bitmapX;
-            _textY = bitmapHeight - bitmapY;
+            newTextX = bitmapX;
+            newTextY = bitmapHeight - bitmapY;
         }
+
+        var hasPositionChanged = Math.Abs(_textX - newTextX) > PositionEpsilon
+                                 || Math.Abs(_textY - newTextY) > PositionEpsilon;
+
+        _textX = newTextX;
+        _textY = newTextY;
         RefreshPreview();
+        RenderCurrentPageAsync().ConfigureAwait(false);
+
+        return hasPositionChanged;
     }
 
     public async Task LoadPdfAsync()
@@ -519,9 +534,27 @@ public class AnnotationViewModel
         return Color.TryParse(normalized, out color);
     }
 
-    private async Task RenderCurrentPageAsync()
+    public async Task RenderCurrentPageAsync()
     {
-        await RenderAnnotatedPageAsync();
+        _renderRequested = true;
+        if (_isRendering)
+        {
+            return;
+        }
+
+        while (_renderRequested)
+        {
+            _renderRequested = false;
+            _isRendering = true;
+            try
+            {
+                await RenderAnnotatedPageAsync();
+            }
+            finally
+            {
+                _isRendering = false;
+            }
+        }
     }
 
     /// <summary>

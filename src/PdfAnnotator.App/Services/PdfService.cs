@@ -9,9 +9,10 @@ using Microsoft.Extensions.Logging;
 using PdfAnnotator.Core.Models;
 using PdfAnnotator.Core.Services;
 using PdfSharpCore.Drawing;
+using PdfSharpCore.Pdf;
 using PdfSharpCore.Pdf.IO;
-using UglyToad.PdfPig;
 using UglyToad.PdfPig.Content;
+using PdfDocument = UglyToad.PdfPig.PdfDocument;
 
 namespace PdfAnnotator.App.Services;
 
@@ -20,6 +21,7 @@ public class PdfService : IPdfService
     private readonly ILogger<PdfService> _logger;
     private readonly Dictionary<(string path, int page, int dpi), Bitmap> _renderCache = new();
     private readonly object _cacheLock = new();
+    private const double FontSizeAdjustmentFactor = 0.5; // empirical match between preview and output
     
     // Cache for opened PDF document
     private string? _cachedPdfPath;
@@ -157,17 +159,7 @@ public class PdfService : IPdfService
                 using var gfx = XGraphics.FromPdfPage(page);
 
                 var row = rows.FirstOrDefault(r => r.Page == pageNumber);
-                if (row != null && !string.IsNullOrWhiteSpace(row.Code))
-                {
-                    var color = XColor.FromArgb(ParseColor(preset.ColorHex));
-                    var font = new XFont(preset.FontName, preset.FontSize);
-                    gfx.TranslateTransform(preset.TextX, page.Height - preset.TextY);
-                    if (Math.Abs(preset.Angle) > 0.01)
-                    {
-                        gfx.RotateAtTransform(preset.Angle, new XPoint(0, 0));
-                    }
-                    gfx.DrawString(row.Code, font, new XSolidBrush(color), new XPoint(0, 0));
-                }
+                ApplyAnnotation(gfx, page.Height, row, preset);
             }
 
             document.Save(outputPdfPath);
@@ -195,19 +187,7 @@ public class PdfService : IPdfService
                 var pageIndex = page - 1; // Convert to 0-based index
                 var pdfPage = document.Pages[pageIndex];
                 using var gfx = XGraphics.FromPdfPage(pdfPage);
-
-                // Apply annotation if we have a row with text
-                if (row != null && !string.IsNullOrWhiteSpace(row.Code))
-                {
-                    var color = XColor.FromArgb(ParseColor(preset.ColorHex));
-                    var font = new XFont(preset.FontName, preset.FontSize);
-                    gfx.TranslateTransform(preset.TextX, pdfPage.Height - preset.TextY);
-                    if (Math.Abs(preset.Angle) > 0.01)
-                    {
-                        gfx.RotateAtTransform(preset.Angle, new XPoint(0, 0));
-                    }
-                    gfx.DrawString(row.Code, font, new XSolidBrush(color), new XPoint(0, 0));
-                }
+                ApplyAnnotation(gfx, pdfPage.Height, row, preset);
 
                 // Save the modified document to temporary file
                 document.Save(tempPath);
@@ -228,6 +208,33 @@ public class PdfService : IPdfService
                 }
             }
         });
+    }
+
+    private void ApplyAnnotation(XGraphics gfx, double pageHeight, TableRow? row, AnnotationPreset preset)
+    {
+        if (row == null || string.IsNullOrWhiteSpace(row.Code))
+        {
+            return;
+        }
+
+        var state = gfx.Save();
+        try
+        {
+            var color = XColor.FromArgb(ParseColor(preset.ColorHex));
+            var font = new XFont(preset.FontName, preset.FontSize * FontSizeAdjustmentFactor);
+            
+            gfx.TranslateTransform(preset.TextX, pageHeight - preset.TextY);
+            if (Math.Abs(preset.Angle) > 0.01)
+            {
+                gfx.RotateAtTransform(preset.Angle, new XPoint(0, 0));
+            }
+
+            gfx.DrawString(row.Code, font, new XSolidBrush(color), new XPoint(0, 0));
+        }
+        finally
+        {
+            gfx.Restore(state);
+        }
     }
 
     private static bool IsInside(Word word, ExtractionPreset preset)

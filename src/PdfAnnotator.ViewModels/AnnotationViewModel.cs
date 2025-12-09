@@ -1,5 +1,6 @@
 using System;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.IO;
@@ -111,6 +112,12 @@ public class AnnotationViewModel
         }
     }
     
+    public bool OpenFileAfterSaving
+    {
+        get => _openFileAfterSaving;
+        set => _openFileAfterSaving = value;
+    }
+    
     private string _colorHex = "#000000";
     private Color _selectedColor = Colors.Black;
     private bool _isSyncingColor;
@@ -119,6 +126,7 @@ public class AnnotationViewModel
     private bool _isRendering;
     private bool _renderRequested;
     private bool _suppressPreviewPositionUpdate;
+    private bool _openFileAfterSaving = true;
 
     public string ColorHex
     {
@@ -401,6 +409,19 @@ public class AnnotationViewModel
         
         await _pdfService.GenerateAnnotatedPdfAsync(PdfPath, outputPath, Rows.ToList(), preset);
         _logger.LogInformation("Annotated PDF saved at {Path}", outputPath);
+        
+        // Open file after saving if option is enabled
+        if (OpenFileAfterSaving && File.Exists(outputPath))
+        {
+            try
+            {
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(outputPath) { UseShellExecute = true });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to open PDF file at {Path}", outputPath);
+            }
+        }
     }
 
     private void RefreshPreview()

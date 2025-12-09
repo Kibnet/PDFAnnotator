@@ -105,6 +105,7 @@
                     
                     <Button Content="Отрендерить" Command="{Binding RenderPageCommand}" Background="DodgerBlue" HorizontalAlignment="Stretch"/>
                     
+                    <CheckBox Content="Открыть файл после сохранения" IsChecked="{Binding OpenFileAfterSaving}"/>
                     <Button Content="Сохранить итоговый PDF" Background="ForestGreen" Click="OnSaveAnnotatedPdfClick" HorizontalAlignment="Stretch"/>
                 </StackPanel>
             </ScrollViewer>

@@ -85,17 +85,14 @@ public class PdfService : IPdfService
                 var widthPt = pigPage.Width;
                 var heightPt = pigPage.Height;
                 
-                var targetWidth = Math.Clamp((int)Math.Round(widthPt / 72.0 * dpi), 1, 8000);
-                var targetHeight = Math.Clamp((int)Math.Round(heightPt / 72.0 * dpi), 1, 8000);
-
-                using var docReader = DocLib.Instance.GetDocReader(path, new PageDimensions(Math.Min(targetWidth, targetHeight), Math.Max(targetWidth, targetHeight)));
+                using var docReader = DocLib.Instance.GetDocReader(path, new PageDimensions(2));
                 using var pageReader = docReader.GetPageReader(page - 1);
                 var converter = new NaiveTransparencyRemover(255, 255, 255);
                 var rawBytes = pageReader.GetImage(converter);
                 var width = pageReader.GetPageWidth();
                 var height = pageReader.GetPageHeight();
 
-                var bitmap = new WriteableBitmap(new PixelSize(width, height), new Vector(dpi, dpi),
+                var bitmap = new WriteableBitmap(new PixelSize(width, height), new Vector(96,96),
                     PixelFormat.Bgra8888, AlphaFormat.Unpremul);
                 using (var buffer = bitmap.Lock())
                 {

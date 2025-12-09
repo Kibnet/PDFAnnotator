@@ -1,11 +1,14 @@
 using System;
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Linq;
 using System.IO;
 using System.Threading.Tasks;
 using System.Windows.Input;
+using Avalonia;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
+using Avalonia.Platform;
 using Microsoft.Extensions.Logging;
 using PdfAnnotator.Core.Models;
 using PdfAnnotator.Core.Services;
@@ -76,8 +79,26 @@ public class AnnotationViewModel
     
     public double PreviewX { get; set; }
     public double PreviewY { get; set; }
-    public double FontSize { get; set; } = 12;
-    public double Angle { get; set; }
+    private double _fontSize = 12;
+    public double FontSize
+    {
+        get => _fontSize;
+        set
+        {
+            _fontSize = value;
+            RefreshPreview();
+        }
+    }
+    private double _angle;
+    public double Angle
+    {
+        get => _angle;
+        set
+        {
+            _angle = value;
+            RefreshPreview();
+        }
+    }
     
     private string _colorHex = "#000000";
     private Color _selectedColor = Colors.Black;
@@ -149,7 +170,16 @@ public class AnnotationViewModel
         }
     }
 
-    public string FontName { get; set; } = "Helvetica";
+    private string _fontName = "Helvetica";
+    public string FontName
+    {
+        get => _fontName;
+        set
+        {
+            _fontName = value;
+            RefreshPreview();
+        }
+    }
     public double OriginalPageWidthPt { get; set; }
     public double OriginalPageHeightPt { get; set; }
 

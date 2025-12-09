@@ -122,6 +122,7 @@
                                    Canvas.Left="{Binding PreviewX}"
                                    Canvas.Top="{Binding PreviewY}"
                                    FontSize="{Binding FontSize}"
+                                   FontFamily="{Binding FontName}"
                                    Foreground="{Binding ColorHex}"
                                    RenderTransformOrigin="0,0">
                             <TextBlock.RenderTransform>

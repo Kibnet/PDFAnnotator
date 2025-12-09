@@ -61,8 +61,12 @@ public class AnnotationViewModel
         set
         {
             _textX = value;
-            UpdatePreviewPosition();
+            if (!_suppressPreviewPositionUpdate)
+            {
+                UpdatePreviewPosition();
+            }
             RefreshPreview();
+            _ = RenderCurrentPageAsync();
         }
     }
     
@@ -73,8 +77,12 @@ public class AnnotationViewModel
         set
         {
             _textY = value;
-            UpdatePreviewPosition();
+            if (!_suppressPreviewPositionUpdate)
+            {
+                UpdatePreviewPosition();
+            }
             RefreshPreview();
+            _ = RenderCurrentPageAsync();
         }
     }
     
@@ -88,6 +96,7 @@ public class AnnotationViewModel
         {
             _fontSize = value;
             RefreshPreview();
+            _ = RenderCurrentPageAsync();
         }
     }
     private double _angle;
@@ -98,6 +107,7 @@ public class AnnotationViewModel
         {
             _angle = value;
             RefreshPreview();
+            _ = RenderCurrentPageAsync();
         }
     }
     
@@ -108,6 +118,7 @@ public class AnnotationViewModel
     private bool _isSyncingInsertText;
     private bool _isRendering;
     private bool _renderRequested;
+    private bool _suppressPreviewPositionUpdate;
 
     public string ColorHex
     {
@@ -127,6 +138,8 @@ public class AnnotationViewModel
                 SelectedColor = parsed;
                 _isSyncingColor = false;
             }
+
+            _ = RenderCurrentPageAsync();
         }
     }
 
@@ -181,6 +194,7 @@ public class AnnotationViewModel
         {
             _fontName = value;
             RefreshPreview();
+            _ = RenderCurrentPageAsync();
         }
     }
     public double OriginalPageWidthPt { get; set; }
@@ -264,10 +278,11 @@ public class AnnotationViewModel
         var hasPositionChanged = Math.Abs(_textX - newTextX) > PositionEpsilon
                                  || Math.Abs(_textY - newTextY) > PositionEpsilon;
 
-        _textX = newTextX;
-        _textY = newTextY;
+        _suppressPreviewPositionUpdate = true;
+        TextX = newTextX;
+        TextY = newTextY;
+        _suppressPreviewPositionUpdate = false;
         RefreshPreview();
-        RenderCurrentPageAsync().ConfigureAwait(false);
 
         return hasPositionChanged;
     }
@@ -361,6 +376,7 @@ public class AnnotationViewModel
         UpdatePreviewPosition();
         
         RefreshPreview();
+        _ = RenderCurrentPageAsync();
     }
 
     // New method that will be called from the view after getting the save path from user
@@ -455,6 +471,7 @@ public class AnnotationViewModel
         UpdatePreviewPosition();
         
         RefreshPreview();
+        _ = RenderCurrentPageAsync();
     }
     
     /// <summary>

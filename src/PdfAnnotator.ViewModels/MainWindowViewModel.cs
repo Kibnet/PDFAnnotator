@@ -38,7 +38,6 @@ public class MainWindowViewModel
     }
 
     public ICommand GoToTableCommand { get; }
-    public ICommand GoToAnnotationCommand { get; }
     public ICommand GoToExtractionCommand { get; }
     public ICommand SaveProjectCommand { get; }
     public ICommand LoadProjectCommand { get; }
@@ -65,7 +64,7 @@ public class MainWindowViewModel
         Extraction.PageChanged += HandleExtractionPageChanged;
 
         GoToTableCommand = new RelayCommand(_ => Mode = AppMode.Table);
-        GoToAnnotationCommand = new RelayCommand(async _ => await GoToAnnotationAsync());
+        Table.GoToAnnotationCommand = new RelayCommand(async _ => await GoToAnnotationAsync());
         GoToExtractionCommand = new RelayCommand(_ => Mode = AppMode.Extraction);
         SaveProjectCommand = new RelayCommand(async _ => await SaveProjectAsync());
         LoadProjectCommand = new RelayCommand(async _ => await LoadProjectAsync());

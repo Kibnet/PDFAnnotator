@@ -209,7 +209,47 @@ public class AnnotationViewModel
     public double OriginalPageWidthPt { get; set; }
     public double OriginalPageHeightPt { get; set; }
 
-    public ObservableCollection<string> Fonts { get; } = new(new[] { "Arial", "Helvetica", "Times New Roman" });
+    public ObservableCollection<string> Fonts { get; } = new();
+
+    private void InitializeFonts()
+    {
+        try
+        {
+            var fontCollection = FontManager.Current.SystemFonts;
+            var uniqueNames = fontCollection
+                .Select(ff => ff.Name)
+                .Where(name => !string.IsNullOrWhiteSpace(name))
+                .Distinct()
+                .OrderBy(name => name)
+                .ToList();
+
+            Fonts.Clear();
+            foreach (var name in uniqueNames)
+            {
+                Fonts.Add(name);
+            }
+
+            if (!string.IsNullOrWhiteSpace(FontName) && !Fonts.Contains(FontName))
+            {
+                Fonts.Insert(0, FontName);
+            }
+            else if (string.IsNullOrWhiteSpace(FontName) && Fonts.Count > 0)
+            {
+                FontName = Fonts[0];
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to load system fonts");
+
+            if (Fonts.Count == 0)
+            {
+                Fonts.Add("Arial");
+                Fonts.Add("Helvetica");
+                Fonts.Add("Times New Roman");
+            }
+        }
+    }
 
     public ObservableCollection<TableRow> Rows { get; } = new();
     public string SelectedCodePreview { get; set; } = DefaultInsertText;
@@ -233,8 +273,7 @@ public class AnnotationViewModel
     public ICommand DeletePresetCommand { get; }
     public ICommand RenamePresetCommand { get; }
     public ICommand RenderPageCommand { get; }
-    // SaveAnnotatedPdfCommand removed since we're handling save in the view
-
+    
     public AnnotationViewModel(IPdfService pdfService, IPresetService<AnnotationPreset> presetService, ILogger<AnnotationViewModel> logger)
     {
         _pdfService = pdfService;
@@ -248,6 +287,7 @@ public class AnnotationViewModel
         DeletePresetCommand = new RelayCommand(async _ => await DeletePresetAsync());
         RenamePresetCommand = new RelayCommand(async _ => await RenamePresetAsync());
         RenderPageCommand = new RelayCommand(async _ => await RenderCurrentPageAsync());
+        InitializeFonts();
         // SaveAnnotatedPdfCommand initialization removed
     }
 

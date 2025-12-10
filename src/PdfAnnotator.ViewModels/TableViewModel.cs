@@ -27,6 +27,7 @@ public class TableViewModel
 
     public ICommand SaveCsvCommand { get; }
     public ICommand LoadCsvCommand { get; }
+    public ICommand GoToAnnotationCommand { get; set; }
 
     public TableViewModel(ICsvService csvService, ILogger<TableViewModel> logger)
     {

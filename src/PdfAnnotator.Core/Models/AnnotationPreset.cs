@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace PdfAnnotator.Core.Models;
 
 public class AnnotationPreset : IPreset
@@ -7,6 +9,10 @@ public class AnnotationPreset : IPreset
     public double TextY { get; set; }
     public double FontSize { get; set; }
     public double Angle { get; set; }
+    
+    [JsonPropertyName("color")]
     public string ColorHex { get; set; } = "#000000";
+    
+    [JsonPropertyName("fontName")]
     public string FontName { get; set; } = "Helvetica";
 }

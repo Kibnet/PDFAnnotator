@@ -193,7 +193,7 @@ public class PdfService : IPdfService
                 document.Save(tempPath);
 
                 // Render the annotated page
-                return RenderPageAsync(tempPath, 1, dpi).Result;
+                return RenderPageAsync(tempPath, page, dpi).Result;
             }
             finally
             {

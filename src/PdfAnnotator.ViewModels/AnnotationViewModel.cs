@@ -191,6 +191,7 @@ public class AnnotationViewModel
             }
 
             SelectedCodePreview = _insertText;
+            _ = RenderCurrentPageAsync();
         }
     }
 
@@ -257,6 +258,7 @@ public class AnnotationViewModel
         {
             Rows.Add(row);
         }
+        _logger.LogDebug("SetRows called with {Count} rows. Page numbers: {PageNumbers}", Rows.Count, string.Join(",", Rows.Select(r => r.Page)));
         RefreshPreview();
     }
 
@@ -303,14 +305,17 @@ public class AnnotationViewModel
             return;
         }
 
-        var snapshot = await PageRenderService.RenderPageAsync(_pdfService, PdfPath, CurrentPage);
-        if (snapshot == null)
-        {
-            _logger.LogWarning("Failed to render annotation PDF");
-            return;
-        }
+        // var snapshot = await PageRenderService.RenderPageAsync(_pdfService, PdfPath, CurrentPage);
+        // if (snapshot == null)
+        // {
+        //     _logger.LogWarning("Failed to render annotation PDF");
+        //     return;
+        // }
 
-        ApplyPageSnapshot(snapshot);
+        //ApplyPageSnapshot(snapshot);
+        
+        // Also render the annotated page to show annotations on the loaded page
+        await RenderCurrentPageAsync();
     }
 
     private async Task LoadPageAsync()
@@ -320,13 +325,16 @@ public class AnnotationViewModel
             return;
         }
 
-        var snapshot = await PageRenderService.RenderPageAsync(_pdfService, PdfPath, CurrentPage, PageCount);
-        if (snapshot == null)
-        {
-            return;
-        }
+        // var snapshot = await PageRenderService.RenderPageAsync(_pdfService, PdfPath, CurrentPage, PageCount);
+        // if (snapshot == null)
+        // {
+        //     return;
+        // }
 
-        ApplyPageSnapshot(snapshot);
+        //ApplyPageSnapshot(snapshot);
+        
+        // Also render the annotated page to show annotations on the newly loaded page
+        await RenderCurrentPageAsync();
     }
 
     private async Task SavePresetAsync()
@@ -621,6 +629,7 @@ public class AnnotationViewModel
 
             // Get the current row for this page
             var currentRow = Rows.FirstOrDefault(r => r.Page == CurrentPage);
+            _logger.LogDebug("Rendering page {Page}, found row: {HasRow}, Rows count: {RowsCount}", CurrentPage, currentRow != null, Rows.Count);
 
             // Render the annotated page directly
             var annotatedBitmap = await _pdfService.RenderAnnotatedPageAsync(PdfPath, CurrentPage, currentRow, preset, PageRenderService.RenderDpi);

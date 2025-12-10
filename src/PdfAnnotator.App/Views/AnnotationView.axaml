@@ -17,19 +17,13 @@
                                      Text="{Binding PdfPath, UpdateSourceTrigger=PropertyChanged}"
                                      HorizontalAlignment="Stretch"/>
                             <WrapPanel ItemSpacing="8" VerticalAlignment="Center">
-                                <Button Content="Открыть PDF" Click="OnOpenPdfClick" Command="{Binding LoadPdfCommand}"/>
+                                <Button Content="Сменить PDF" Click="OnOpenPdfClick" Command="{Binding LoadPdfCommand}"/>
                                 <TextBlock Text="{Binding PageCount, StringFormat='Страниц: {0}'}"
                                            VerticalAlignment="Center"/>
                                 <NumericUpDown Minimum="1" FormatString="N0"
                                                Maximum="{Binding PageCount}"
                                                Value="{Binding CurrentPage}"/>
                             </WrapPanel>
-                            <StackPanel Spacing="4">
-                                <TextBlock Text="Текст для вставки"/>
-                                <TextBox AcceptsReturn="True"
-                                         TextWrapping="Wrap"
-                                         Text="{Binding InsertText, UpdateSourceTrigger=PropertyChanged}"/>
-                            </StackPanel>
                         </StackPanel>
                     </Border>
 
@@ -66,24 +60,15 @@
                             <WrapPanel ItemSpacing="12">
                                 <StackPanel Spacing="4">
                                     <TextBlock Text="Размер шрифта"/>
-                                    <NumericUpDown Width="120" Minimum="6" Maximum="200" Value="{Binding FontSize}"/>
+                                    <NumericUpDown Width="120" Minimum="6" Maximum="72" Value="{Binding FontSize}"/>
                                 </StackPanel>
                                 <StackPanel Spacing="4">
                                     <TextBlock Text="Цвет"/>
-                                    <WrapPanel ItemSpacing="8" VerticalAlignment="Center">
-                                        <TextBox Width="120" Text="{Binding ColorHex, UpdateSourceTrigger=PropertyChanged}"/>
-                                        <ColorPicker Width="64" Height="30" Color="{Binding SelectedColor}">
-                                            <ColorPicker.Content>
-                                                <Border HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="{Binding ColorHex}"/>
-                                            </ColorPicker.Content>
-                                        </ColorPicker>
-                                        
-                                    </WrapPanel>
-                                    
+                                    <TextBox Width="120" Text="{Binding ColorHex}"/>
                                 </StackPanel>
                                 <StackPanel Spacing="4">
                                     <TextBlock Text="Угол"/>
-                                    <NumericUpDown Width="120" Minimum="-360" Maximum="360" Value="{Binding Angle}"/>
+                                    <NumericUpDown Width="120" Minimum="0" Maximum="360" Value="{Binding Angle}"/>
                                 </StackPanel>
                                 <StackPanel Spacing="4">
                                     <TextBlock Text="Шрифт"/>
@@ -102,11 +87,13 @@
                             </WrapPanel>
                         </StackPanel>
                     </Border>
-                    
-                    <Button Content="Отрендерить" Command="{Binding RenderPageCommand}" Background="DodgerBlue" HorizontalAlignment="Stretch"/>
-                    
-                    <CheckBox Content="Открыть файл после сохранения" IsChecked="{Binding OpenFileAfterSaving}"/>
-                    <Button Content="Сохранить итоговый PDF" Background="ForestGreen" Click="OnSaveAnnotatedPdfClick" HorizontalAlignment="Stretch"/>
+
+                    <Border Padding="8" Background="#08000000" CornerRadius="4">
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="Сохранение результата" FontWeight="SemiBold"/>
+                            <Button Content="Сохранить итоговый PDF" Command="{Binding SaveAnnotatedPdfCommand}" HorizontalAlignment="Stretch"/>
+                        </StackPanel>
+                    </Border>
                 </StackPanel>
             </ScrollViewer>
         </Border>
@@ -116,8 +103,23 @@
                 <Grid Width="{Binding PageBitmap.PixelSize.Width}" Height="{Binding PageBitmap.PixelSize.Height}">
                     <Image x:Name="AnnotImage"
                            Source="{Binding PageBitmap}"
-                           Stretch="Uniform"
+                           Stretch="Fill"
                            PointerPressed="OnPointerPressed"/>
+                    <Canvas IsHitTestVisible="False"
+                            Width="{Binding #AnnotImage.Bounds.Width}"
+                            Height="{Binding #AnnotImage.Bounds.Height}">
+                        <TextBlock Text="{Binding SelectedCodePreview}"
+                                   Canvas.Left="{Binding PreviewX}"
+                                   Canvas.Top="{Binding PreviewY}"
+                                   FontSize="{Binding FontSize}"
+                                   FontFamily="{Binding FontName}"
+                                   Foreground="{Binding ColorHex}"
+                                   RenderTransformOrigin="0,0">
+                            <TextBlock.RenderTransform>
+                                <RotateTransform Angle="{Binding Angle}"/>
+                            </TextBlock.RenderTransform>
+                        </TextBlock>
+                    </Canvas>
                 </Grid>
             </Viewbox>
         </Border>
